@@ -6,96 +6,146 @@
 <title>ダンス隊列ビューア</title>
 
 <style>
-  body { font-family: "Meiryo UI", sans-serif; margin: 0; background: #f5f5f5; }
+  body {
+    font-family: "Meiryo UI", sans-serif;
+    margin: 0;
+    background: #f5f5f5;
+  }
 
-  /* 全体レイアウト */
-#top-controls {
-  display:flex;
-  justify-content:space-between;
-  padding:6px 10px;
-  background:#fff;
-  border-bottom:1px solid #ccc;
-  font-size:14px;
-}
+  /* 上：設定エリア（薄型） */
+  #top-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 10px;
+    background: #fff;
+    border-bottom: 1px solid #ccc;
+    font-size: 14px;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
 
-#stage-container {
-  padding:0;
-  background:#ddd;
-  text-align:center;
-}
+  #top-controls input {
+    width: 60px;
+    padding: 4px;
+  }
 
-#stage {
-  width:100%;
-  aspect-ratio:4 / 3;
-  background:white;
-  border:1px solid #ccc;
-}
+  #top-controls button {
+    padding: 4px 10px;
+  }
 
-#timeline {
-  padding:4px 10px;
-  background:#fff;
-  border-top:1px solid #ccc;
-}
+  /* 中央：ステージ（4:3） */
+  #stage-container {
+    background: #ddd;
+    text-align: center;
+    padding: 0;
+  }
 
-#formation-list {
-  display:flex;
-  gap:8px;
-  padding:8px;
-  overflow-x:auto;
-  background:#fafafa;
-  border-top:1px solid #ccc;
-  height:120px;
-}
+  #stage {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    background: white;
+    border: 1px solid #ccc;
+    touch-action: none;
+  }
 
-.formation-thumb {
-  width:80px;
-  height:60px;
-  background:#eee;
-  border:1px solid #ccc;
-  border-radius:4px;
-  flex-shrink:0;
-}
+  /* 中下：再生バー */
+  #timeline {
+    padding: 6px 10px;
+    background: #fff;
+    border-top: 1px solid #ccc;
+  }
 
-.formation-thumb.add {
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  font-size:24px;
-  color:#666;
-}
+  #time-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
 
+  #musicBar {
+    width: 100%;
+  }
 
-  button { padding: 6px 14px; }
-  input { padding: 4px; width: 70px; }
+  /* 下：フォーメーション一覧（横スクロール） */
+  #formation-list.horizontal {
+    display: flex;
+    gap: 8px;
+    padding: 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    background: #fafafa;
+    border-top: 1px solid #ccc;
+    height: 120px;
+  }
+
+  /* 下：フォーメーション一覧（縦スクロール・グリッド） */
+  #formation-list.vertical {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 8px;
+    padding: 8px;
+    overflow-y: auto;
+    background: #fafafa;
+    border-top: 1px solid #ccc;
+    height: 200px;
+  }
+
+  /* サムネイル */
+  .formation-thumb {
+    width: 80px;
+    height: 60px;
+    background: #eee;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+
+  .formation-thumb.add {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 24px;
+    color: #666;
+  }
 </style>
 </head>
 <body>
 
 <!-- 上：設定エリア -->
 <div id="top-controls">
-  <div class="group">
+  <div>
     人数：<input type="number" id="numPeople" value="20">
     横(m)：<input type="number" id="wMeter" value="9">
     縦(m)：<input type="number" id="hMeter" value="5.4">
   </div>
 
-  <div class="group">
+  <div>
     <button id="applyBtn">更新</button>
     <button id="resetBtn">リセット</button>
     <button id="pathToggle">動線</button>
     <button id="formationMode">作成</button>
+    <button id="viewToggle">一覧切替</button>
   </div>
 </div>
 
+<!-- 中央：ステージ -->
 <div id="stage-container">
   <canvas id="stage"></canvas>
 </div>
 
+<!-- 中下：再生バー -->
 <div id="timeline">
-  <input type="range" id="musicBar" min="0" max="180" value="0">
+  <div id="time-controls">
+    <button id="playBtn">▶︎</button>
+    <span id="currentTime">0:00</span> / <span id="totalTime">3:00</span>
+  </div>
+
+  <input type="range" id="musicBar" min="0" max="180" value="0" step="0.01">
 </div>
 
-<div id="formation-list">
+<!-- 下：フォーメーション一覧（初期は横スクロール） -->
+<div id="formation-list" class="horizontal">
   <div class="formation-thumb"></div>
   <div class="formation-thumb"></div>
   <div class="formation-thumb"></div>
@@ -103,7 +153,29 @@
 </div>
 
 <script>
-// ここに今までの Canvas コードをそのまま入れる（後で統合）
+/* 一覧切替ボタン */
+document.getElementById("viewToggle").addEventListener("click", () => {
+  const list = document.getElementById("formation-list");
+
+  if (list.classList.contains("horizontal")) {
+    list.classList.remove("horizontal");
+    list.classList.add("vertical");
+  } else {
+    list.classList.remove("vertical");
+    list.classList.add("horizontal");
+  }
+});
+
+/* 再生バーの時間表示 */
+function formatTime(sec) {
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60).toString().padStart(2, "0");
+  return `${m}:${s}`;
+}
+
+document.getElementById("musicBar").addEventListener("input", (e) => {
+  document.getElementById("currentTime").textContent = formatTime(e.target.value);
+});
 </script>
 
 </body>
