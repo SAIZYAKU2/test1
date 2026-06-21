@@ -80,16 +80,17 @@
   }
 
   /* 下：フォーメーション一覧（縦スクロール・グリッド） */
-  #formation-list.vertical {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-    gap: 8px;
-    padding: 8px;
-    overflow-y: auto;
-    background: #fafafa;
-    border-top: 1px solid #ccc;
-    height: 200px;
-  }
+#formation-list.vertical {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 8px;
+  padding: 8px;
+  overflow-y: auto;
+  height: 200px;
+  background: #fafafa;
+  border-top: 1px solid #ccc;
+}
+
 
   /* サムネイル */
   .formation-thumb {
@@ -188,8 +189,12 @@ const canvas = document.getElementById("stage");
 const ctx = canvas.getContext("2d");
 
 function resizeCanvas() {
-  canvas.width = canvas.clientWidth;
-  canvas.height = canvas.clientHeight;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width;
+  canvas.height = rect.height;
+
+  fitStageToScreen();
+  draw();
 }
 resizeCanvas();
 window.addEventListener("resize", resizeCanvas);
@@ -327,6 +332,7 @@ function hitTest(x, y) {
 
 /* ステージ更新 */
 document.getElementById("applyBtn").addEventListener("click", () => {
+  resizeCanvas();   // ← 追加
   stageWidth = parseFloat(wMeter.value) * METER_TO_PX;
   stageHeight = parseFloat(hMeter.value) * METER_TO_PX;
 
@@ -339,6 +345,7 @@ document.getElementById("applyBtn").addEventListener("click", () => {
 
 /* リセット */
 document.getElementById("resetBtn").addEventListener("click", () => {
+  resizeCanvas();   // ← 追加
   generateDancers();
   fitStageToScreen();
   draw();
