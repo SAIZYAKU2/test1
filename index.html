@@ -12,7 +12,7 @@
 </head>
 <body>
 
-<h3 style="text-align:center;">ダンス隊列ビューア（ピンチ＋個別ドラッグ）</h3>
+<h3 style="text-align:center;">ダンス隊列ビューア（ピンチ中心ズーム＋2点パン）</h3>
 <canvas id="stage" width="360" height="500"></canvas>
 
 <script>
@@ -29,7 +29,7 @@ for (let i = 0; i < 20; i++) {
   });
 }
 
-// ズームと移動
+// ズームとパン
 let scale = 1;
 let offsetX = 0;
 let offsetY = 0;
@@ -61,6 +61,116 @@ function draw() {
 
 draw();
 
+// 当たり判定
+function hitTest(x, y) {
+  const invX = (x - offsetX) / scale;
+  const invY = (y - offsetY) / scale;
+
+  for (let d of dancers) {
+    const dx = invX - d.x;
+    const dy = invY - d.y;
+    if (dx * dx + dy * dy <= 15 * 15) return d;
+  }
+  return null;
+}
+
+// PC：マウス操作
+canvas.addEventListener("mousedown", e => {
+  dragging = hitTest(e.offsetX, e.offsetY);
+});
+
+canvas.addEventListener("mousemove", e => {
+  if (!dragging) return;
+
+  dragging.x = (e.offsetX - offsetX) / scale;
+  dragging.y = (e.offsetY - offsetY) / scale;
+  draw();
+});
+
+canvas.addEventListener("mouseup", () => dragging = null);
+
+// スマホ：タッチ操作
+let lastDist = 0;
+let lastCx = 0, lastCy = 0;
+
+canvas.addEventListener("touchstart", e => {
+  const rect = canvas.getBoundingClientRect();
+
+  if (e.touches.length === 1) {
+    const x = e.touches[0].clientX - rect.left;
+    const y = e.touches[0].clientY - rect.top;
+    dragging = hitTest(x, y);
+  }
+
+  if (e.touches.length === 2) {
+    lastDist = getDist(e);
+    const c = getCenter(e, rect);
+    lastCx = c.x;
+    lastCy = c.y;
+  }
+});
+
+canvas.addEventListener("touchmove", e => {
+  e.preventDefault();
+  const rect = canvas.getBoundingClientRect();
+
+  // 1本指ドラッグ
+  if (e.touches.length === 1 && dragging) {
+    const x = e.touches[0].clientX - rect.left;
+    const y = e.touches[0].clientY - rect.top;
+
+    dragging.x = (x - offsetX) / scale;
+    dragging.y = (y - offsetY) / scale;
+    draw();
+  }
+
+  // 2本指ピンチ（ズーム＋パン）
+  if (e.touches.length === 2) {
+    const newDist = getDist(e);
+    const c = getCenter(e, rect);
+
+    // ズーム前の中心点の世界座標
+    const worldX = (c.x - offsetX) / scale;
+    const worldY = (c.y - offsetY) / scale;
+
+    // スケール変更
+    scale *= newDist / lastDist;
+    lastDist = newDist;
+
+    // ズーム後も同じ世界座標が中心に来るように補正
+    offsetX = c.x - worldX * scale;
+    offsetY = c.y - worldY * scale;
+
+    // 2本指の移動量でパン
+    offsetX += (c.x - lastCx);
+    offsetY += (c.y - lastCy);
+
+    lastCx = c.x;
+    lastCy = c.y;
+
+    draw();
+  }
+});
+
+canvas.addEventListener("touchend", () => dragging = null);
+
+// 2点間距離
+function getDist(e) {
+  const dx = e.touches[0].clientX - e.touches[1].clientX;
+  const dy = e.touches[0].clientY - e.touches[1].clientY;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+// 2点の中心
+function getCenter(e, rect) {
+  const x = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
+  const y = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
+  return { x, y };
+}
+</script>
+
+</body>
+</html>
 // 当たり判定
 function hitTest(x, y) {
   const invX = (x - offsetX) / scale;
