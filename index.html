@@ -15,7 +15,7 @@
 </head>
 <body>
 
-<h3 style="text-align:center;">ダンス隊列ビューア（ステージ入力＋ピンチ中心ズーム＋リセット）</h3>
+<h3 style="text-align:center;">ダンス隊列ビューア（ステージ入力＋フィット＋ピンチズーム）</h3>
 
 <div id="controls">
   横(m)：<input type="number" id="wMeter" value="9" step="0.1">
@@ -30,12 +30,15 @@
 const canvas = document.getElementById("stage");
 const ctx = canvas.getContext("2d");
 
-// 1m を何 px にするか（後で変更可能）
+// 1m = 100px（必要なら後で変更可能）
 const METER_TO_PX = 100;
 
 // ステージサイズ（初期値：9m × 5.4m）
 let stageWidth = 9 * METER_TO_PX;
 let stageHeight = 5.4 * METER_TO_PX;
+
+// 人のサイズ（固定）
+let personRadius = 15;
 
 // 20人の初期位置
 const dancers = [];
@@ -51,6 +54,17 @@ for (let i = 0; i < 20; i++) {
 let scale = 1;
 let offsetX = 0;
 let offsetY = 0;
+
+// ステージを画面にフィットさせる
+function fitStageToScreen() {
+  const scaleX = canvas.width / stageWidth;
+  const scaleY = canvas.height / stageHeight;
+
+  scale = Math.min(scaleX, scaleY);
+
+  offsetX = (canvas.width  - stageWidth  * scale) / 2;
+  offsetY = (canvas.height - stageHeight * scale) / 2;
+}
 
 // 描画
 function draw() {
@@ -72,7 +86,7 @@ function draw() {
   // ダンサー
   dancers.forEach(d => {
     ctx.beginPath();
-    ctx.arc(d.x, d.y, 15, 0, Math.PI * 2);
+    ctx.arc(d.x, d.y, personRadius, 0, Math.PI * 2);
     ctx.fillStyle = "#3498db";
     ctx.fill();
 
@@ -84,6 +98,7 @@ function draw() {
   ctx.restore();
 }
 
+fitStageToScreen();
 draw();
 
 // 当たり判定
@@ -94,7 +109,7 @@ function hitTest(x, y) {
   for (let d of dancers) {
     const dx = invX - d.x;
     const dy = invY - d.y;
-    if (dx * dx + dy * dy <= 15 * 15) return d;
+    if (dx * dx + dy * dy <= personRadius * personRadius) return d;
   }
   return null;
 }
@@ -203,14 +218,13 @@ document.getElementById("applyBtn").addEventListener("click", () => {
   stageWidth = w * METER_TO_PX;
   stageHeight = h * METER_TO_PX;
 
+  fitStageToScreen();
   draw();
 });
 
 // リセットボタン
 document.getElementById("resetBtn").addEventListener("click", () => {
-  scale = 1;
-  offsetX = 0;
-  offsetY = 0;
+  fitStageToScreen();
   draw();
 });
 </script>
