@@ -1,32 +1,154 @@
+<script>
+window.onerror = function(msg, url, line, col, error) {
+  alert("JS Error: " + msg + " @ line " + line);
+};
+</script>
+
 <!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ダンス隊列ビューア</title>
+<title>Dance Formation Viewer</title>
+
 <style>
-  body { font-family: "Meiryo UI", sans-serif; background: #f5f5f5; margin: 0; }
-  #stage { background: white; border: 1px solid #ccc; display: block; margin: auto; }
+  body {
+    font-family: "Meiryo UI", sans-serif;
+    background: #f5f5f5;
+    margin: 0;
+  }
+  #stage {
+    background: white;
+    border: 1px solid #ccc;
+    touch-action: none;
+    display: block;
+  }
 </style>
 </head>
 <body>
-<h3 style="text-align:center;">ダンス隊列ビューア</h3>
-<canvas id="stage" width="360" height="300"></canvas>
+<div id="debug" style="padding:10px; background:#eee; font-size:14px;">
+Canvas size: <span id="size"></span>
+</div>
+<h3 style="text-align:center; margin:10px 0;">ダンス隊列ビューア（丸を個別に動かせる版）</h3>
+<canvas id="stage"></canvas>
 
 <script>
+// -----------------------------
+// Canvas 初期化
+// -----------------------------
 const canvas = document.getElementById("stage");
 const ctx = canvas.getContext("2d");
+
+function resizeCanvas() {
+  canvas.width = Math.max(window.innerWidth, 360);
+  canvas.height = 500;
+  document.getElementById("size").innerText =
+  canvas.width + " x " + canvas.height;
+
+}
+resizeCanvas();
+
+// -----------------------------
+// 20名の初期配置
+// -----------------------------
+const dancers = [];
 for (let i = 0; i < 20; i++) {
-  const x = 40 + (i % 10) * 30;
-  const y = 40 + Math.floor(i / 10) * 60;
-  ctx.beginPath();
-  ctx.arc(x, y, 10, 0, Math.PI * 2);
-  ctx.fillStyle = "#3498db";
-  ctx.fill();
-  ctx.fillStyle = "#fff";
-  ctx.font = "10px Meiryo UI";
-  ctx.fillText(i + 1, x - 4, y + 3);
+  dancers.push({
+    id: i + 1,
+    x: 100 + (i % 10) * 50,
+    y: 100 + Math.floor(i / 10) * 80
+  });
+}
+
+// -----------------------------
+// 描画
+// -----------------------------
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // ★テスト用：赤い四角を描画
+  ctx.fillStyle = "red";
+  ctx.fillRect(10, 10, 50, 50);
+
+  dancers.forEach(d => {
+    ctx.beginPath();
+    ctx.arc(d.x, d.y, 15, 0, Math.PI * 2);
+    ctx.fillStyle = "#3498db";
+    ctx.fill();
+
+    ctx.fillStyle = "#fff";
+    ctx.font = "12px Meiryo UI";
+    ctx.fillText(d.id, d.x - 5, d.y + 4);
+  });
+}
+
+
+draw();
+
+// -----------------------------
+// ドラッグ対象
+// -----------------------------
+let dragging = null;
+
+// -----------------------------
+// PC：マウス操作
+// -----------------------------
+canvas.addEventListener("mousedown", e => {
+  const mx = e.offsetX;
+  const my = e.offsetY;
+
+  dragging = hitTest(mx, my);
+});
+
+canvas.addEventListener("mousemove", e => {
+  if (!dragging) return;
+
+  dragging.x = e.offsetX;
+  dragging.y = e.offsetY;
+  draw();
+});
+
+canvas.addEventListener("mouseup", () => dragging = null);
+
+// -----------------------------
+// スマホ：タッチ操作
+// -----------------------------
+canvas.addEventListener("touchstart", e => {
+  const rect = canvas.getBoundingClientRect();
+  const tx = e.touches[0].clientX - rect.left;
+  const ty = e.touches[0].clientY - rect.top;
+
+  dragging = hitTest(tx, ty);
+});
+
+canvas.addEventListener("touchmove", e => {
+  if (!dragging) return;
+
+  const rect = canvas.getBoundingClientRect();
+  const tx = e.touches[0].clientX - rect.left;
+  const ty = e.touches[0].clientY - rect.top;
+
+  dragging.x = tx;
+  dragging.y = ty;
+  draw();
+});
+
+canvas.addEventListener("touchend", () => dragging = null);
+
+// -----------------------------
+// 当たり判定
+// -----------------------------
+function hitTest(x, y) {
+  for (let d of dancers) {
+    const dx = x - d.x;
+    const dy = y - d.y;
+    if (dx * dx + dy * dy <= 15 * 15) {
+      return d;
+    }
+  }
+  return null;
 }
 </script>
+
 </body>
 </html>
