@@ -8,24 +8,42 @@
 <style>
   body { font-family: "Meiryo UI", sans-serif; margin: 0; background: #f5f5f5; }
   #stage { background: white; border: 1px solid #ccc; display: block; margin: auto; touch-action: none; }
+  #controls { text-align:center; margin:10px; }
+  input { width:80px; padding:5px; }
+  button { padding:8px 20px; margin-left:10px; }
 </style>
 </head>
 <body>
 
-<h3 style="text-align:center;">ダンス隊列ビューア（ピンチ中心ズーム＋2点パン）</h3>
+<h3 style="text-align:center;">ダンス隊列ビューア（ステージ入力＋ピンチ中心ズーム＋リセット）</h3>
+
+<div id="controls">
+  横(m)：<input type="number" id="wMeter" value="9" step="0.1">
+  縦(m)：<input type="number" id="hMeter" value="5.4" step="0.1">
+  <button id="applyBtn">ステージ更新</button>
+  <button id="resetBtn">リセット</button>
+</div>
+
 <canvas id="stage" width="360" height="500"></canvas>
 
 <script>
 const canvas = document.getElementById("stage");
 const ctx = canvas.getContext("2d");
 
+// 1m を何 px にするか（後で変更可能）
+const METER_TO_PX = 100;
+
+// ステージサイズ（初期値：9m × 5.4m）
+let stageWidth = 9 * METER_TO_PX;
+let stageHeight = 5.4 * METER_TO_PX;
+
 // 20人の初期位置
 const dancers = [];
 for (let i = 0; i < 20; i++) {
   dancers.push({
     id: i + 1,
-    x: 80 + (i % 5) * 50,
-    y: 80 + Math.floor(i / 5) * 70
+    x: 100 + (i % 5) * 80,
+    y: 100 + Math.floor(i / 5) * 80
   });
 }
 
@@ -33,9 +51,6 @@ for (let i = 0; i < 20; i++) {
 let scale = 1;
 let offsetX = 0;
 let offsetY = 0;
-
-// ドラッグ対象
-let dragging = null;
 
 // 描画
 function draw() {
@@ -45,6 +60,16 @@ function draw() {
   ctx.translate(offsetX, offsetY);
   ctx.scale(scale, scale);
 
+  // ステージ背景
+  ctx.fillStyle = "#f0f0f0";
+  ctx.fillRect(0, 0, stageWidth, stageHeight);
+
+  // ステージ枠線
+  ctx.strokeStyle = "#999";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(0, 0, stageWidth, stageHeight);
+
+  // ダンサー
   dancers.forEach(d => {
     ctx.beginPath();
     ctx.arc(d.x, d.y, 15, 0, Math.PI * 2);
@@ -75,6 +100,8 @@ function hitTest(x, y) {
 }
 
 // PC：マウス操作
+let dragging = null;
+
 canvas.addEventListener("mousedown", e => {
   dragging = hitTest(e.offsetX, e.offsetY);
 });
@@ -167,85 +194,25 @@ function getCenter(e, rect) {
   const y = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
   return { x, y };
 }
-</script>
 
-</body>
-</html>
-// 当たり判定
-function hitTest(x, y) {
-  const invX = (x - offsetX) / scale;
-  const invY = (y - offsetY) / scale;
+// ステージ更新ボタン
+document.getElementById("applyBtn").addEventListener("click", () => {
+  const w = parseFloat(document.getElementById("wMeter").value);
+  const h = parseFloat(document.getElementById("hMeter").value);
 
-  for (let d of dancers) {
-    const dx = invX - d.x;
-    const dy = invY - d.y;
-    if (dx * dx + dy * dy <= 15 * 15) return d;
-  }
-  return null;
-}
+  stageWidth = w * METER_TO_PX;
+  stageHeight = h * METER_TO_PX;
 
-// PC：マウス操作
-canvas.addEventListener("mousedown", e => {
-  dragging = hitTest(e.offsetX, e.offsetY);
-});
-
-canvas.addEventListener("mousemove", e => {
-  if (!dragging) return;
-
-  dragging.x = (e.offsetX - offsetX) / scale;
-  dragging.y = (e.offsetY - offsetY) / scale;
   draw();
 });
 
-canvas.addEventListener("mouseup", () => dragging = null);
-
-// スマホ：タッチ操作
-let lastX = 0, lastY = 0;
-let lastDist = 0;
-
-canvas.addEventListener("touchstart", e => {
-  if (e.touches.length === 1) {
-    const rect = canvas.getBoundingClientRect();
-    const x = e.touches[0].clientX - rect.left;
-    const y = e.touches[0].clientY - rect.top;
-
-    dragging = hitTest(x, y);
-    lastX = x;
-    lastY = y;
-  } else if (e.touches.length === 2) {
-    lastDist = getDist(e);
-  }
+// リセットボタン
+document.getElementById("resetBtn").addEventListener("click", () => {
+  scale = 1;
+  offsetX = 0;
+  offsetY = 0;
+  draw();
 });
-
-canvas.addEventListener("touchmove", e => {
-  e.preventDefault();
-  const rect = canvas.getBoundingClientRect();
-
-  if (e.touches.length === 1 && dragging) {
-    const x = e.touches[0].clientX - rect.left;
-    const y = e.touches[0].clientY - rect.top;
-
-    dragging.x = (x - offsetX) / scale;
-    dragging.y = (y - offsetY) / scale;
-    draw();
-  }
-
-  if (e.touches.length === 2) {
-    const newDist = getDist(e);
-    scale *= newDist / lastDist;
-    lastDist = newDist;
-    draw();
-  }
-});
-
-canvas.addEventListener("touchend", () => dragging = null);
-
-// 2点間距離
-function getDist(e) {
-  const dx = e.touches[0].clientX - e.touches[1].clientX;
-  const dy = e.touches[0].clientY - e.touches[1].clientY;
-  return Math.sqrt(dx * dx + dy * dy);
-}
 </script>
 
 </body>
