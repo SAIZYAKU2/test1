@@ -80,17 +80,16 @@
   }
 
   /* 下：フォーメーション一覧（縦スクロール・グリッド） */
-#formation-list.vertical {
-  display: grid !important;
-  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-  gap: 8px;
-  padding: 8px;
-  overflow-y: auto;
-  height: 200px;
-  background: #fafafa;
-  border-top: 1px solid #ccc;
-}
-
+  #formation-list.vertical {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 8px;
+    padding: 8px;
+    overflow-y: auto;
+    background: #fafafa;
+    border-top: 1px solid #ccc;
+    height: 200px;
+  }
 
   /* サムネイル */
   .formation-thumb {
@@ -155,7 +154,7 @@
 
 <script>
 /* ============================
-   UI：一覧切替
+   一覧切替
 ============================ */
 document.getElementById("viewToggle").addEventListener("click", () => {
   const list = document.getElementById("formation-list");
@@ -188,6 +187,7 @@ document.getElementById("musicBar").addEventListener("input", (e) => {
 const canvas = document.getElementById("stage");
 const ctx = canvas.getContext("2d");
 
+/* Canvas 内部サイズを CSS に同期（最重要） */
 function resizeCanvas() {
   const rect = canvas.getBoundingClientRect();
   canvas.width = rect.width;
@@ -199,18 +199,18 @@ function resizeCanvas() {
 resizeCanvas();
 window.addEventListener("resize", resizeCanvas);
 
-// 1m = 100px
+/* 1m = 100px */
 const METER_TO_PX = 100;
 
-// ステージサイズ
+/* ステージサイズ */
 let stageWidth = 9 * METER_TO_PX;
 let stageHeight = 5.4 * METER_TO_PX;
 
-// 人の半径（m → px）
+/* 人の半径（m → px） */
 let personRadiusM = 0.5;
 let personRadiusPx = personRadiusM * METER_TO_PX;
 
-// ダンサー配列
+/* ダンサー配列 */
 let dancers = [];
 
 /* 均等配置 */
@@ -300,6 +300,19 @@ generateDancers();
 fitStageToScreen();
 draw();
 
+/* 当たり判定 */
+function hitTest(x, y) {
+  const invX = (x - offsetX) / scale;
+  const invY = (y - offsetY) / scale;
+
+  for (let d of dancers) {
+    const dx = invX - d.x;
+    const dy = invY - d.y;
+    if (dx * dx + dy * dy <= personRadiusPx * personRadiusPx) return d;
+  }
+  return null;
+}
+
 /* マウスドラッグ */
 let dragging = null;
 
@@ -317,22 +330,9 @@ canvas.addEventListener("mousemove", e => {
 
 canvas.addEventListener("mouseup", () => dragging = null);
 
-/* 当たり判定 */
-function hitTest(x, y) {
-  const invX = (x - offsetX) / scale;
-  const invY = (y - offsetY) / scale;
-
-  for (let d of dancers) {
-    const dx = invX - d.x;
-    const dy = invY - d.y;
-    if (dx * dx + dy * dy <= personRadiusPx * personRadiusPx) return d;
-  }
-  return null;
-}
-
 /* ステージ更新 */
 document.getElementById("applyBtn").addEventListener("click", () => {
-  resizeCanvas();   // ← 追加
+  resizeCanvas();
   stageWidth = parseFloat(wMeter.value) * METER_TO_PX;
   stageHeight = parseFloat(hMeter.value) * METER_TO_PX;
 
@@ -345,7 +345,7 @@ document.getElementById("applyBtn").addEventListener("click", () => {
 
 /* リセット */
 document.getElementById("resetBtn").addEventListener("click", () => {
-  resizeCanvas();   // ← 追加
+  resizeCanvas();
   generateDancers();
   fitStageToScreen();
   draw();
