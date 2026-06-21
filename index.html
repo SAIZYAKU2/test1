@@ -9,36 +9,52 @@
   body { font-family: "Meiryo UI", sans-serif; margin: 0; background: #f5f5f5; }
 
   /* 全体レイアウト */
-  #top-controls {
-    padding: 10px;
-    background: #fff;
-    border-bottom: 1px solid #ccc;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    justify-content: center;
-  }
+#top-controls {
+  display:flex;
+  justify-content:space-between;
+  padding:6px 10px;
+  background:#fff;
+  border-bottom:1px solid #ccc;
+  font-size:14px;
+}
 
-  #stage-container {
-    background: #ddd;
-    padding: 10px;
-    text-align: center;
-  }
+#stage-container {
+  padding:0;
+  background:#ddd;
+  text-align:center;
+}
 
-  #timeline {
-    padding: 10px;
-    background: #fff;
-    border-top: 1px solid #ccc;
-    border-bottom: 1px solid #ccc;
-  }
+#timeline {
+  padding:4px 10px;
+  background:#fff;
+  border-top:1px solid #ccc;
+}
 
-  #formation-list {
-    padding: 10px;
-    background: #fafafa;
-    height: 200px;
-    overflow-y: auto;
-    border-top: 1px solid #ccc;
-  }
+#formation-list {
+  display:flex;
+  gap:8px;
+  padding:8px;
+  overflow-x:auto;
+  background:#fafafa;
+  border-top:1px solid #ccc;
+}
+
+.formation-thumb {
+  width:80px;
+  height:60px;
+  background:#eee;
+  border:1px solid #ccc;
+  border-radius:4px;
+  flex-shrink:0;
+}
+
+.formation-thumb.add {
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  font-size:24px;
+  color:#666;
+}
 
   button { padding: 6px 14px; }
   input { padding: 4px; width: 70px; }
@@ -48,33 +64,33 @@
 
 <!-- 上：設定エリア -->
 <div id="top-controls">
-  人数：<input type="number" id="numPeople" value="20" min="1" max="200">
-  横(m)：<input type="number" id="wMeter" value="9" step="0.1">
-  縦(m)：<input type="number" id="hMeter" value="5.4" step="0.1">
+  <div class="group">
+    人数：<input type="number" id="numPeople" value="20">
+    横(m)：<input type="number" id="wMeter" value="9">
+    縦(m)：<input type="number" id="hMeter" value="5.4">
+  </div>
 
-  <button id="applyBtn">ステージ更新</button>
-  <button id="resetBtn">リセット</button>
-
-  <button id="pathToggle">動線 ON/OFF</button>
-  <button id="formationMode">フォーメーション作成モード</button>
+  <div class="group">
+    <button id="applyBtn">更新</button>
+    <button id="resetBtn">リセット</button>
+    <button id="pathToggle">動線</button>
+    <button id="formationMode">作成</button>
+  </div>
 </div>
 
-<!-- 中央：ステージ -->
 <div id="stage-container">
-  <canvas id="stage" width="360" height="500"></canvas>
+  <canvas id="stage"></canvas>
 </div>
 
-<!-- 中下：曲の再生バー -->
 <div id="timeline">
-  <input type="range" id="musicBar" min="0" max="180" value="0" step="0.01" style="width:90%;">
-  <div id="timeLabel" style="text-align:center;">0.0 / 180.0 sec</div>
+  <input type="range" id="musicBar" min="0" max="180" value="0">
 </div>
 
-<!-- 下：フォーメーション一覧 -->
 <div id="formation-list">
-  <div class="formation-item">フォーメーション 1（仮）</div>
-  <div class="formation-item">フォーメーション 2（仮）</div>
-  <div class="formation-item">フォーメーション 3（仮）</div>
+  <div class="formation-thumb"></div>
+  <div class="formation-thumb"></div>
+  <div class="formation-thumb"></div>
+  <div class="formation-thumb add">＋</div>
 </div>
 
 <script>
