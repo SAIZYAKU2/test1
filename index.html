@@ -64,34 +64,22 @@
 </div>
 
 <script>
-/* ============================
-   一覧切替
-============================ */
-document.getElementById("viewToggle").addEventListener("click", () => {
-  const list = document.getElementById("formation-list");
-  list.classList.toggle("horizontal");
-  list.classList.toggle("vertical");
-});
-
-/* ============================
-   Canvas 初期化
-============================ */
+/* DOM 取得（ここが超重要） */
+const numPeople = document.getElementById("numPeople");
+const applyBtn  = document.getElementById("applyBtn");
+const resetBtn  = document.getElementById("resetBtn");
+const viewToggle = document.getElementById("viewToggle");
+const formationList = document.getElementById("formation-list");
 const canvas = document.getElementById("stage");
 const ctx = canvas.getContext("2d");
 
-function resizeCanvas() {
-  const rect = canvas.getBoundingClientRect();
-  canvas.width = rect.width;
-  canvas.height = rect.height;
-  fitStage();
-  draw();
-}
-resizeCanvas();
-window.addEventListener("resize", resizeCanvas);
+/* 一覧切替 */
+viewToggle.addEventListener("click", () => {
+  formationList.classList.toggle("horizontal");
+  formationList.classList.toggle("vertical");
+});
 
-/* ============================
-   ステージ設定
-============================ */
+/* ステージ設定 */
 const METER = 100;
 let stageW = 9 * METER;
 let stageH = 5.4 * METER;
@@ -99,6 +87,10 @@ let stageH = 5.4 * METER;
 let scale = 1;
 let offsetX = 0;
 let offsetY = 0;
+
+/* ダンサー */
+let dancers = [];
+const r = 0.5 * METER;
 
 /* ステージを画面にフィット */
 function fitStage() {
@@ -109,15 +101,12 @@ function fitStage() {
   offsetY = (canvas.height - stageH * scale) / 2;
 }
 
-/* ============================
-   ダンサー生成
-============================ */
-let dancers = [];
-const r = 0.5 * METER;
-
+/* ダンサー生成 */
 function generateDancers() {
-  const N = parseInt(numPeople.value);
+  const N = parseInt(numPeople.value, 10) || 0;
   dancers = [];
+
+  if (N <= 0) return;
 
   const cols = Math.ceil(Math.sqrt(N * (stageW / stageH)));
   const rows = Math.ceil(N / cols);
@@ -136,9 +125,7 @@ function generateDancers() {
   }
 }
 
-/* ============================
-   描画
-============================ */
+/* 描画 */
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -158,7 +145,7 @@ function draw() {
     ctx.fill();
 
     ctx.fillStyle = "#fff";
-    ctx.font = `${r}px Meiryo UI`;
+    ctx.font = `${r * 0.8}px Meiryo UI`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(d.id, d.x, d.y);
@@ -167,9 +154,16 @@ function draw() {
   ctx.restore();
 }
 
-/* ============================
-   ドラッグ
-============================ */
+/* Canvas サイズ同期 */
+function resizeCanvas() {
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width;
+  canvas.height = rect.height;
+  fitStage();
+  draw();
+}
+
+/* ドラッグ */
 let dragging = null;
 
 function hitTest(px, py) {
@@ -196,9 +190,7 @@ canvas.addEventListener("mousemove", e => {
 
 canvas.addEventListener("mouseup", () => dragging = null);
 
-/* ============================
-   更新・リセット
-============================ */
+/* 更新・リセット */
 applyBtn.addEventListener("click", () => {
   generateDancers();
   fitStage();
@@ -211,10 +203,15 @@ resetBtn.addEventListener("click", () => {
   draw();
 });
 
-/* 初期化 */
-generateDancers();
-fitStage();
-draw();
+/* 初期化：レイアウト完了後に実行 */
+window.addEventListener("load", () => {
+  resizeCanvas();
+  generateDancers();
+  fitStage();
+  draw();
+});
+
+window.addEventListener("resize", resizeCanvas);
 </script>
 
 </body>
