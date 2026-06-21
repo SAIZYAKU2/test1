@@ -6,120 +6,56 @@
 <title>ダンス隊列ビューア</title>
 
 <style>
-  body {
-    font-family: "Meiryo UI", sans-serif;
-    margin: 0;
-    background: #f5f5f5;
-  }
+  body { font-family: "Meiryo UI"; margin: 0; background: #f5f5f5; }
 
-  /* 上：設定エリア（薄型） */
   #top-controls {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 6px 10px;
-    background: #fff;
-    border-bottom: 1px solid #ccc;
-    font-size: 14px;
-    flex-wrap: wrap;
-    gap: 6px;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 6px 10px; background: #fff; border-bottom: 1px solid #ccc;
+    font-size: 14px; flex-wrap: wrap; gap: 6px;
   }
+  #top-controls input { width: 60px; padding: 4px; }
+  #top-controls button { padding: 4px 10px; }
 
-  #top-controls input {
-    width: 60px;
-    padding: 4px;
-  }
-
-  #top-controls button {
-    padding: 4px 10px;
-  }
-
-  /* 中央：ステージ（4:3） */
-  #stage-container {
-    background: #ddd;
-    text-align: center;
-    padding: 0;
-  }
-
+  #stage-container { background: #ddd; text-align: center; padding: 0; }
   #stage {
-    width: 100%;
-    aspect-ratio: 4 / 3;
-    background: white;
-    border: 1px solid #ccc;
-    touch-action: none;
+    width: 100%; aspect-ratio: 4 / 3;
+    background: white; border: 1px solid #ccc; touch-action: none;
   }
 
-  /* 中下：再生バー */
-  #timeline {
-    padding: 6px 10px;
-    background: #fff;
-    border-top: 1px solid #ccc;
-  }
+  #timeline { padding: 6px 10px; background: #fff; border-top: 1px solid #ccc; }
+  #time-controls { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+  #musicBar { width: 100%; }
 
-  #time-controls {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 4px;
-  }
-
-  #musicBar {
-    width: 100%;
-  }
-
-  /* 下：フォーメーション一覧（横スクロール） */
   #formation-list.horizontal {
-    display: flex;
-    gap: 8px;
-    padding: 8px;
-    overflow-x: auto;
-    overflow-y: hidden;
-    background: #fafafa;
-    border-top: 1px solid #ccc;
-    height: 120px;
+    display: flex; gap: 8px; padding: 8px;
+    overflow-x: auto; overflow-y: hidden;
+    background: #fafafa; border-top: 1px solid #ccc; height: 120px;
   }
-
-  /* 下：フォーメーション一覧（縦スクロール・グリッド） */
   #formation-list.vertical {
     display: grid !important;
     grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-    gap: 8px;
-    padding: 8px;
-    overflow-y: auto;
-    background: #fafafa;
-    border-top: 1px solid #ccc;
-    height: 200px;
+    gap: 8px; padding: 8px; overflow-y: auto;
+    background: #fafafa; border-top: 1px solid #ccc; height: 200px;
   }
 
-  /* サムネイル */
   .formation-thumb {
-    width: 80px;
-    height: 60px;
-    background: #eee;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    flex-shrink: 0;
+    width: 80px; height: 60px; background: #eee;
+    border: 1px solid #ccc; border-radius: 4px; flex-shrink: 0;
   }
-
   .formation-thumb.add {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 24px;
-    color: #666;
+    display: flex; justify-content: center; align-items: center;
+    font-size: 24px; color: #666;
   }
 </style>
 </head>
 <body>
 
-<!-- 上：設定エリア -->
 <div id="top-controls">
   <div>
     人数：<input type="number" id="numPeople" value="20">
     横(m)：<input type="number" id="wMeter" value="9">
     縦(m)：<input type="number" id="hMeter" value="5.4">
   </div>
-
   <div>
     <button id="applyBtn">更新</button>
     <button id="resetBtn">リセット</button>
@@ -129,22 +65,18 @@
   </div>
 </div>
 
-<!-- 中央：ステージ -->
 <div id="stage-container">
   <canvas id="stage"></canvas>
 </div>
 
-<!-- 中下：再生バー -->
 <div id="timeline">
   <div id="time-controls">
     <button id="playBtn">▶︎</button>
     <span id="currentTime">0:00</span> / <span id="totalTime">3:00</span>
   </div>
-
   <input type="range" id="musicBar" min="0" max="180" value="0" step="0.01">
 </div>
 
-<!-- 下：フォーメーション一覧（初期は横スクロール） -->
 <div id="formation-list" class="horizontal">
   <div class="formation-thumb"></div>
   <div class="formation-thumb"></div>
@@ -153,69 +85,50 @@
 </div>
 
 <script>
-/* ============================
-   一覧切替
-============================ */
+/* 一覧切替 */
 document.getElementById("viewToggle").addEventListener("click", () => {
   const list = document.getElementById("formation-list");
-
-  if (list.classList.contains("horizontal")) {
-    list.classList.remove("horizontal");
-    list.classList.add("vertical");
-  } else {
-    list.classList.remove("vertical");
-    list.classList.add("horizontal");
-  }
+  list.classList.toggle("horizontal");
+  list.classList.toggle("vertical");
 });
 
-/* ============================
-   再生バーの時間表示
-============================ */
+/* 時間表示 */
 function formatTime(sec) {
   const m = Math.floor(sec / 60);
   const s = Math.floor(sec % 60).toString().padStart(2, "0");
   return `${m}:${s}`;
 }
-
-document.getElementById("musicBar").addEventListener("input", (e) => {
-  document.getElementById("currentTime").textContent = formatTime(e.target.value);
+document.getElementById("musicBar").addEventListener("input", e => {
+  currentTime.textContent = formatTime(e.target.value);
 });
 
-/* ============================
-   Canvas：ステージ描画
-============================ */
+/* Canvas */
 const canvas = document.getElementById("stage");
 const ctx = canvas.getContext("2d");
 
-/* Canvas 内部サイズを CSS に同期（最重要） */
 function resizeCanvas() {
   const rect = canvas.getBoundingClientRect();
   canvas.width = rect.width;
   canvas.height = rect.height;
-
   fitStageToScreen();
   draw();
 }
 resizeCanvas();
 window.addEventListener("resize", resizeCanvas);
 
-/* 1m = 100px */
+/* ステージ設定 */
 const METER_TO_PX = 100;
-
-/* ステージサイズ */
 let stageWidth = 9 * METER_TO_PX;
 let stageHeight = 5.4 * METER_TO_PX;
 
-/* 人の半径（m → px） */
 let personRadiusM = 0.5;
 let personRadiusPx = personRadiusM * METER_TO_PX;
 
-/* ダンサー配列 */
 let dancers = [];
 
 /* 均等配置 */
 function generateDancers() {
-  const N = parseInt(document.getElementById("numPeople").value);
+  const N = parseInt(numPeople.value);
   dancers = [];
 
   const cols = Math.ceil(Math.sqrt(N * (stageWidth / stageHeight)));
@@ -227,7 +140,6 @@ function generateDancers() {
   for (let i = 0; i < N; i++) {
     const col = i % cols;
     const row = Math.floor(i / cols);
-
     dancers.push({
       id: i + 1,
       x: (col + 0.5) * cellW,
@@ -236,7 +148,7 @@ function generateDancers() {
   }
 }
 
-/* ステージを画面にフィット */
+/* フィット */
 let scale = 1;
 let offsetX = 0;
 let offsetY = 0;
@@ -244,9 +156,7 @@ let offsetY = 0;
 function fitStageToScreen() {
   const scaleX = canvas.width / stageWidth;
   const scaleY = canvas.height / stageHeight;
-
   scale = Math.min(scaleX, scaleY);
-
   offsetX = (canvas.width - stageWidth * scale) / 2;
   offsetY = (canvas.height - stageHeight * scale) / 2;
 }
@@ -255,9 +165,8 @@ function fitStageToScreen() {
 function getBestFontSize(text, radiusPx) {
   let size = radiusPx * 2;
   ctx.font = size + "px Meiryo UI";
-
   while (ctx.measureText(text).width > radiusPx * 1.6) {
-    size -= 1;
+    size--;
     ctx.font = size + "px Meiryo UI";
   }
   return size;
@@ -304,7 +213,6 @@ draw();
 function hitTest(x, y) {
   const invX = (x - offsetX) / scale;
   const invY = (y - offsetY) / scale;
-
   for (let d of dancers) {
     const dx = invX - d.x;
     const dy = invY - d.y;
@@ -313,7 +221,7 @@ function hitTest(x, y) {
   return null;
 }
 
-/* マウスドラッグ */
+/* ドラッグ */
 let dragging = null;
 
 canvas.addEventListener("mousedown", e => {
@@ -322,7 +230,6 @@ canvas.addEventListener("mousedown", e => {
 
 canvas.addEventListener("mousemove", e => {
   if (!dragging) return;
-
   dragging.x = (e.offsetX - offsetX) / scale;
   dragging.y = (e.offsetY - offsetY) / scale;
   draw();
@@ -330,21 +237,20 @@ canvas.addEventListener("mousemove", e => {
 
 canvas.addEventListener("mouseup", () => dragging = null);
 
-/* ステージ更新 */
-document.getElementById("applyBtn").addEventListener("click", () => {
-  resizeCanvas();
+/* 更新 */
+applyBtn.addEventListener("click", () => {
   stageWidth = parseFloat(wMeter.value) * METER_TO_PX;
   stageHeight = parseFloat(hMeter.value) * METER_TO_PX;
-
   personRadiusPx = personRadiusM * METER_TO_PX;
 
+  resizeCanvas();
   generateDancers();
   fitStageToScreen();
   draw();
 });
 
 /* リセット */
-document.getElementById("resetBtn").addEventListener("click", () => {
+resetBtn.addEventListener("click", () => {
   resizeCanvas();
   generateDancers();
   fitStageToScreen();
