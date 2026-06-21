@@ -15,9 +15,10 @@
 </head>
 <body>
 
-<h3 style="text-align:center;">ダンス隊列ビューア（ステージ入力＋フィット＋ピンチズーム）</h3>
+<h3 style="text-align:center;">ダンス隊列ビューア（人数・ステージ入力＋均等配置＋ピンチズーム）</h3>
 
 <div id="controls">
+  人数：<input type="number" id="numPeople" value="20" min="1" max="200">
   横(m)：<input type="number" id="wMeter" value="9" step="0.1">
   縦(m)：<input type="number" id="hMeter" value="5.4" step="0.1">
   <button id="applyBtn">ステージ更新</button>
@@ -30,24 +31,42 @@
 const canvas = document.getElementById("stage");
 const ctx = canvas.getContext("2d");
 
-// 1m = 100px（必要なら後で変更可能）
+// 1m = 100px
 const METER_TO_PX = 100;
 
 // ステージサイズ（初期値：9m × 5.4m）
 let stageWidth = 9 * METER_TO_PX;
 let stageHeight = 5.4 * METER_TO_PX;
 
-// 人のサイズ（固定）
-let personRadius = 0.5 * METER_TO_PX;
+// 人の半径（m）
+let personRadiusM = 0.5;
+let personRadiusPx = personRadiusM * METER_TO_PX;
 
-// 20人の初期位置
-const dancers = [];
-for (let i = 0; i < 20; i++) {
-  dancers.push({
-    id: i + 1,
-    x: 100 + (i % 5) * 80,
-    y: 100 + Math.floor(i / 5) * 80
-  });
+// ダンサー配列
+let dancers = [];
+
+// ステージに均等配置
+function generateDancers() {
+  const N = parseInt(document.getElementById("numPeople").value);
+  dancers = [];
+
+  // ステージの縦横比に合わせた最適グリッド
+  const cols = Math.ceil(Math.sqrt(N * (stageWidth / stageHeight)));
+  const rows = Math.ceil(N / cols);
+
+  const cellW = stageWidth / cols;
+  const cellH = stageHeight / rows;
+
+  for (let i = 0; i < N; i++) {
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+
+    dancers.push({
+      id: i + 1,
+      x: (col + 0.5) * cellW,
+      y: (row + 0.5) * cellH
+    });
+  }
 }
 
 // ズームとパン
@@ -64,6 +83,18 @@ function fitStageToScreen() {
 
   offsetX = (canvas.width  - stageWidth  * scale) / 2;
   offsetY = (canvas.height - stageHeight * scale) / 2;
+}
+
+// 文字サイズを最大化（青丸からはみ出ないように）
+function getBestFontSize(text, radiusPx) {
+  let size = radiusPx * 2; // 最大は直径
+  ctx.font = size + "px Meiryo UI";
+
+  while (ctx.measureText(text).width > radiusPx * 1.6) {
+    size -= 1;
+    ctx.font = size + "px Meiryo UI";
+  }
+  return size;
 }
 
 // 描画
@@ -86,18 +117,23 @@ function draw() {
   // ダンサー
   dancers.forEach(d => {
     ctx.beginPath();
-    ctx.arc(d.x, d.y, personRadius, 0, Math.PI * 2);
+    ctx.arc(d.x, d.y, personRadiusPx, 0, Math.PI * 2);
     ctx.fillStyle = "#3498db";
     ctx.fill();
 
+    // 文字最大化
+    const fontSize = getBestFontSize(d.id, personRadiusPx);
+    ctx.font = fontSize + "px Meiryo UI";
     ctx.fillStyle = "#fff";
-    ctx.font = "12px Meiryo UI";
-    ctx.fillText(d.id, d.x - 5, d.y + 4);
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(d.id, d.x, d.y);
   });
 
   ctx.restore();
 }
 
+generateDancers();
 fitStageToScreen();
 draw();
 
@@ -109,7 +145,7 @@ function hitTest(x, y) {
   for (let d of dancers) {
     const dx = invX - d.x;
     const dy = invY - d.y;
-    if (dx * dx + dy * dy <= personRadius * personRadius) return d;
+    if (dx * dx + dy * dy <= personRadiusPx * personRadiusPx) return d;
   }
   return null;
 }
@@ -218,12 +254,16 @@ document.getElementById("applyBtn").addEventListener("click", () => {
   stageWidth = w * METER_TO_PX;
   stageHeight = h * METER_TO_PX;
 
+  personRadiusPx = personRadiusM * METER_TO_PX;
+
+  generateDancers();
   fitStageToScreen();
   draw();
 });
 
 // リセットボタン
 document.getElementById("resetBtn").addEventListener("click", () => {
+  generateDancers();
   fitStageToScreen();
   draw();
 });
