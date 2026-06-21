@@ -1,126 +1,15 @@
 <!DOCTYPE html>
-<html lang="ja">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>最小動作テスト</title>
+<html>
+<body style="margin:0;background:#ddd;">
 
-<style>
-  body { margin: 0; background: #ddd; }
-  canvas {
-    width: 100%;
-    aspect-ratio: 4 / 3;
-    background: white;
-    border: 1px solid #000;
-    touch-action: none;
-  }
-</style>
-</head>
-<body>
-
-<canvas id="stage"></canvas>
+<canvas id="c" width="300" height="200" style="border:1px solid #000;"></canvas>
 
 <script>
-const canvas = document.getElementById("stage");
-const ctx = canvas.getContext("2d");
+const c = document.getElementById("c");
+const ctx = c.getContext("2d");
 
-function resizeCanvas() {
-  const rect = canvas.getBoundingClientRect();
-  canvas.width = rect.width;
-  canvas.height = rect.height;
-  draw();
-}
-resizeCanvas();
-window.addEventListener("resize", resizeCanvas);
-
-// ステージサイズ（px）
-const stageWidth = 900;
-const stageHeight = 540;
-
-// 人の半径
-const r = 50;
-
-// 20人を均等配置
-let dancers = [];
-function generate() {
-  dancers = [];
-  const N = 20;
-  const cols = 5;
-  const rows = 4;
-  const cellW = stageWidth / cols;
-  const cellH = stageHeight / rows;
-
-  for (let i = 0; i < N; i++) {
-    const col = i % cols;
-    const row = Math.floor(i / cols);
-    dancers.push({
-      id: i + 1,
-      x: (col + 0.5) * cellW,
-      y: (row + 0.5) * cellH
-    });
-  }
-}
-generate();
-
-// 描画
-function draw() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  // ステージ背景
-  ctx.fillStyle = "#f0f0f0";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  // 青丸
-  ctx.fillStyle = "#3498db";
-  ctx.strokeStyle = "#000";
-  ctx.lineWidth = 2;
-
-  dancers.forEach(d => {
-    ctx.beginPath();
-    ctx.arc(d.x * (canvas.width / stageWidth),
-            d.y * (canvas.height / stageHeight),
-            r * (canvas.width / stageWidth),
-            0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
-  });
-}
-
-// ドラッグ
-let dragging = null;
-
-canvas.addEventListener("mousedown", e => {
-  const rect = canvas.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  const y = e.clientY - rect.top;
-
-  const sx = stageWidth / canvas.width;
-  const sy = stageHeight / canvas.height;
-
-  dancers.forEach(d => {
-    const dx = x * sx - d.x;
-    const dy = y * sy - d.y;
-    if (dx*dx + dy*dy < r*r) dragging = d;
-  });
-});
-
-canvas.addEventListener("mousemove", e => {
-  if (!dragging) return;
-
-  const rect = canvas.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  const y = e.clientY - rect.top;
-
-  const sx = stageWidth / canvas.width;
-  const sy = stageHeight / canvas.height;
-
-  dragging.x = x * sx;
-  dragging.y = y * sy;
-
-  draw();
-});
-
-canvas.addEventListener("mouseup", () => dragging = null);
+ctx.fillStyle = "red";
+ctx.fillRect(50, 50, 200, 100);
 </script>
 
 </body>
