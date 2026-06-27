@@ -38,6 +38,15 @@
     width: 80px; height: 60px; background: #eee;
     border: 1px solid #ccc; border-radius: 4px;
   }
+
+  /* F-1: 更新メモ表示領域 */
+  #update-log {
+    padding: 8px 10px;
+    font-size: 12px;
+    color: #555;
+    border-top: 1px solid #ccc;
+    background: #fff;
+  }
 </style>
 </head>
 <body>
@@ -63,45 +72,50 @@
   <div class="formation-thumb"></div>
 </div>
 
-<script>
-/* DOM 取得（ここが超重要） */
-const numPeople = document.getElementById("numPeople");
-const applyBtn  = document.getElementById("applyBtn");
-const resetBtn  = document.getElementById("resetBtn");
-const viewToggle = document.getElementById("viewToggle");
-const formationList = document.getElementById("formation-list");
-const canvas = document.getElementById("stage");
-const ctx = canvas.getContext("2d");
+<!-- F-2: 更新メモ -->
+<div id="update-log"></div>
 
-/* 一覧切替 */
+<script>
+/* S-1: DOM 取得 */
+const numPeople     = document.getElementById("numPeople");
+const applyBtn      = document.getElementById("applyBtn");
+const resetBtn      = document.getElementById("resetBtn");
+const viewToggle    = document.getElementById("viewToggle");
+const formationList = document.getElementById("formation-list");
+const canvas        = document.getElementById("stage");
+const ctx           = canvas.getContext("2d");
+const updateLog     = document.getElementById("update-log");
+
+/* S-2: 一覧切替 */
 viewToggle.addEventListener("click", () => {
   formationList.classList.toggle("horizontal");
   formationList.classList.toggle("vertical");
+  logUpdate("一覧切替ボタン押下：表示モード変更");
 });
 
-/* ステージ設定 */
+/* S-3: ステージ設定 */
 const METER = 100;
-let stageW = 9 * METER;
-let stageH = 5.4 * METER;
+let stageW  = 9 * METER;
+let stageH  = 5.4 * METER;
 
-let scale = 1;
+let scale   = 1;
 let offsetX = 0;
 let offsetY = 0;
 
-/* ダンサー */
+/* S-4: ダンサー配列 */
 let dancers = [];
 const r = 0.5 * METER;
 
-/* ステージを画面にフィット */
+/* S-5: ステージを画面にフィット */
 function fitStage() {
   const sx = canvas.width / stageW;
   const sy = canvas.height / stageH;
-  scale = Math.min(sx, sy);
-  offsetX = (canvas.width - stageW * scale) / 2;
-  offsetY = (canvas.height - stageH * scale) / 2;
+  scale    = Math.min(sx, sy);
+  offsetX  = (canvas.width - stageW * scale) / 2;
+  offsetY  = (canvas.height - stageH * scale) / 2;
 }
 
-/* ダンサー生成 */
+/* S-6: ダンサー生成 */
 function generateDancers() {
   const N = parseInt(numPeople.value, 10) || 0;
   dancers = [];
@@ -125,7 +139,7 @@ function generateDancers() {
   }
 }
 
-/* 描画 */
+/* S-7: 描画 */
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -145,7 +159,7 @@ function draw() {
     ctx.fill();
 
     ctx.fillStyle = "#fff";
-    ctx.font = `${r * 0.8}px Meiryo UI`;
+    ctx.font = `${r * 0.6}px Meiryo UI`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(d.id, d.x, d.y);
@@ -154,28 +168,33 @@ function draw() {
   ctx.restore();
 }
 
-/* Canvas サイズ同期 */
+/* S-8: Canvas サイズ同期 */
 function resizeCanvas() {
   const rect = canvas.getBoundingClientRect();
-  canvas.width = rect.width;
+  canvas.width  = rect.width;
   canvas.height = rect.height;
   fitStage();
   draw();
 }
 
-/* ============================
-   ドラッグ
-============================ */
+/* D-1: 画面座標取得（ドラッグ用） */
+function getCanvasPos(e) {
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: e.clientX - rect.left,
+    y: e.clientY - rect.top
+  };
+}
+
+/* D-2: 当たり判定 */
 let dragging = null;
 
 function hitTest(px, py) {
-  // 画面座標 → ステージ座標に変換
   const x = (px - offsetX) / scale;
   const y = (py - offsetY) / scale;
 
-  // 古いブラウザでも確実に動くように for で判定
   for (let i = 0; i < dancers.length; i++) {
-    const d = dancers[i];
+    const d  = dancers[i];
     const dx = x - d.x;
     const dy = y - d.y;
     if (dx * dx + dy * dy <= r * r) {
@@ -185,56 +204,65 @@ function hitTest(px, py) {
   return null;
 }
 
+/* D-3: ドラッグ開始 */
 canvas.addEventListener("mousedown", e => {
-  dragging = hitTest(e.offsetX, e.offsetY);
+  const pos = getCanvasPos(e);
+  dragging  = hitTest(pos.x, pos.y);
 });
 
+/* D-4: ドラッグ中 */
 canvas.addEventListener("mousemove", e => {
   if (!dragging) return;
 
-  // 画面座標 → ステージ座標に変換して更新
-  const x = (e.offsetX - offsetX) / scale;
-  const y = (e.offsetY - offsetY) / scale;
-
-  dragging.x = x;
-  dragging.y = y;
+  const pos = getCanvasPos(e);
+  dragging.x = (pos.x - offsetX) / scale;
+  dragging.y = (pos.y - offsetY) / scale;
 
   draw();
 });
 
+/* D-5: ドラッグ終了 */
 canvas.addEventListener("mouseup", () => {
   dragging = null;
 });
-
 canvas.addEventListener("mouseleave", () => {
   dragging = null;
 });
 
+/* U-1: 更新メモ */
+function logUpdate(msg) {
+  const now = new Date().toLocaleTimeString();
+  updateLog.textContent = `[${now}] ${msg}`;
+}
 
-canvas.addEventListener("mouseup", () => dragging = null);
-
-/* 更新・リセット */
+/* U-2: 更新・リセット */
 applyBtn.addEventListener("click", () => {
   generateDancers();
   fitStage();
   draw();
+  logUpdate("更新ボタン押下：人数再配置");
 });
 
 resetBtn.addEventListener("click", () => {
   generateDancers();
   fitStage();
   draw();
+  logUpdate("リセットボタン押下：初期配置に戻しました");
 });
 
-/* 初期化：レイアウト完了後に実行 */
+/* I-1: 初期化（レイアウト完了後） */
 window.addEventListener("load", () => {
   resizeCanvas();
   generateDancers();
   fitStage();
   draw();
+  logUpdate("初期化完了：青丸生成・描画成功");
 });
 
-window.addEventListener("resize", resizeCanvas);
+window.addEventListener("resize", () => {
+  resizeCanvas();
+  logUpdate("ウィンドウリサイズ：Canvas 再フィット");
+});
 </script>
 
 </body>
