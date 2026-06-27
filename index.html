@@ -163,18 +163,26 @@ function resizeCanvas() {
   draw();
 }
 
-/* ドラッグ */
+/* ============================
+   ドラッグ
+============================ */
 let dragging = null;
 
 function hitTest(px, py) {
+  // 画面座標 → ステージ座標に変換
   const x = (px - offsetX) / scale;
   const y = (py - offsetY) / scale;
 
-  return dancers.find(d => {
+  // 古いブラウザでも確実に動くように for で判定
+  for (let i = 0; i < dancers.length; i++) {
+    const d = dancers[i];
     const dx = x - d.x;
     const dy = y - d.y;
-    return dx*dx + dy*dy <= r*r;
-  });
+    if (dx * dx + dy * dy <= r * r) {
+      return d;
+    }
+  }
+  return null;
 }
 
 canvas.addEventListener("mousedown", e => {
@@ -183,10 +191,25 @@ canvas.addEventListener("mousedown", e => {
 
 canvas.addEventListener("mousemove", e => {
   if (!dragging) return;
-  dragging.x = (e.offsetX - offsetX) / scale;
-  dragging.y = (e.offsetY - offsetY) / scale;
+
+  // 画面座標 → ステージ座標に変換して更新
+  const x = (e.offsetX - offsetX) / scale;
+  const y = (e.offsetY - offsetY) / scale;
+
+  dragging.x = x;
+  dragging.y = y;
+
   draw();
 });
+
+canvas.addEventListener("mouseup", () => {
+  dragging = null;
+});
+
+canvas.addEventListener("mouseleave", () => {
+  dragging = null;
+});
+
 
 canvas.addEventListener("mouseup", () => dragging = null);
 
