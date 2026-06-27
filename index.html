@@ -177,7 +177,7 @@ function resizeCanvas() {
   draw();
 }
 
-/* D-1: 画面座標取得（ドラッグ用） */
+/* D-1: 画面座標取得（offsetX を使わない） */
 function getCanvasPos(e) {
   const rect = canvas.getBoundingClientRect();
   return {
@@ -222,12 +222,8 @@ canvas.addEventListener("mousemove", e => {
 });
 
 /* D-5: ドラッグ終了 */
-canvas.addEventListener("mouseup", () => {
-  dragging = null;
-});
-canvas.addEventListener("mouseleave", () => {
-  dragging = null;
-});
+canvas.addEventListener("mouseup", () => dragging = null);
+canvas.addEventListener("mouseleave", () => dragging = null);
 
 /* U-1: 更新メモ */
 function logUpdate(msg) {
@@ -250,7 +246,7 @@ resetBtn.addEventListener("click", () => {
   logUpdate("リセットボタン押下：初期配置に戻しました");
 });
 
-/* I-1: 初期化（レイアウト完了後） */
+/* I-1: 初期化 */
 window.addEventListener("load", () => {
   resizeCanvas();
   generateDancers();
