@@ -17,10 +17,11 @@
   #top-controls button { padding: 4px 10px; }
 
   #stage-container { background: #ddd; text-align: center; }
-  #stage {
-    width: 100%; aspect-ratio: 4 / 3;
+#stage {
+    width: 100%;
     background: white; border: 1px solid #ccc; touch-action: none;
-  }
+}
+
 
   #formation-list.horizontal {
     display: flex; gap: 8px; padding: 8px;
@@ -171,11 +172,15 @@ function draw() {
 /* S-8: Canvas サイズ同期 */
 function resizeCanvas() {
   const rect = canvas.getBoundingClientRect();
+
+  // 内部サイズを 4:3 に固定
   canvas.width  = rect.width;
-  canvas.height = rect.height;
+  canvas.height = rect.width * 0.75;
+
   fitStage();
   draw();
 }
+
 
 /* D-1: 画面座標取得（offsetX を使わない） */
 function getCanvasPos(e) {
