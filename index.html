@@ -210,20 +210,35 @@ let formations = [];
 let currentFormationId = null;
 
 /* ================================
-   13. ステージフィット（高さ優先）
+   13. ステージフィット（高さ優先＋上下少し余白＋横パン調整）
    ================================ */
 function fitStageToScreen() {
 
-  // ★ 高さ優先でフィットさせる
-  const scaleY = canvas.height / stageHeight;
+  const margin = 10;  // ★上下に少しだけ残す余白（弱さんの希望）
+
+  // ★高さ優先でフィット（上下に余白を残す）
+  const availableHeight = canvas.height - margin * 2;
+  const scaleY = availableHeight / stageHeight;
+
+  // ★横方向のフィットも計算（はみ出す場合のパン調整に使う）
+  const scaleX = canvas.width / stageWidth;
+
+  // ★高さ優先（弱さんの希望）
   scale = scaleY;
 
-  // ★ 上下はぴったり → offsetY = 0
-  offsetY = 0;
+  // ★上下は margin だけ残してぴったり
+  offsetY = margin;
 
-  // ★ 横は中央に寄せる（余白が出てもOK）
+  // ★横方向のステージ幅（スケール後）
   const scaledStageWidth = stageWidth * scale;
-  offsetX = (canvas.width - scaledStageWidth) / 2;
+
+  if (scaledStageWidth <= canvas.width) {
+    // ★横が収まる → 中央に配置
+    offsetX = (canvas.width - scaledStageWidth) / 2;
+  } else {
+    // ★横がはみ出す → 自動で中央にパンして見切れ防止
+    offsetX = (canvas.width - scaledStageWidth) / 2;
+  }
 }
 
 /* ================================
