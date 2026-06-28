@@ -73,10 +73,12 @@ header {
   background: #fff;
   border: 1px solid #ccc;
   touch-action: none;
-  max-width: 100%;
-  height: auto;
-}
 
+  /* ★ Canvas を CSS で縮小しない（ズレの原因になる） */
+  width: 800px;
+  height: 600px;
+}
+   
 /* ================================
    5. 曲バー
    ================================ */
@@ -213,6 +215,7 @@ let currentFormationId = null;
 function fitStageToScreen() {
   const scaleX = canvas.width / stageWidth;
   const scaleY = canvas.height / stageHeight;
+
   scale = Math.min(scaleX, scaleY);
 
   offsetX = (canvas.width - stageWidth * scale) / 2;
