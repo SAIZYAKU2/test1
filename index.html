@@ -2,15 +2,19 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>ドラッグ最小版（環境非依存）</title>
+<title>ドラッグ最小版（最前面固定）</title>
 <style>
-  body { margin: 0; }
+  body { margin: 0; overflow: hidden; }
+
+  /* ★Canvas を画面いっぱい・最前面に固定 */
   #stage {
-    width: 800px;     /* 見た目の幅 */
-    height: 600px;    /* 見た目の高さ */
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100vw;
+    height: 100vh;
     background: #f0f0f0;
-    display: block;
-    margin: 20px auto;
+    z-index: 9999; /* 最前面 */
   }
 </style>
 </head>
@@ -19,19 +23,23 @@
 <canvas id="stage"></canvas>
 
 <script>
-// --- Canvas を取得 ---
 var canvas = document.getElementById("stage");
 var ctx = canvas.getContext("2d");
 
-// --- ★CSS のサイズを内部サイズにコピー（最重要） ---
-canvas.width  = canvas.clientWidth;
-canvas.height = canvas.clientHeight;
+/* ★内部サイズを CSS と一致させる */
+function resize() {
+  canvas.width  = canvas.clientWidth;
+  canvas.height = canvas.clientHeight;
+  draw();
+}
+resize();
+window.onresize = resize;
 
-// --- ドラッグ対象の円 ---
+/* ドラッグ対象 */
 var circle = { x: 200, y: 200, r: 40 };
 var dragging = false;
 
-// --- 描画 ---
+/* 描画 */
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -41,14 +49,7 @@ function draw() {
   ctx.fill();
 }
 
-// --- 当たり判定 ---
-function hitTest(px, py) {
-  var dx = px - circle.x;
-  var dy = py - circle.y;
-  return (dx*dx + dy*dy <= circle.r * circle.r);
-}
-
-// --- マウス座標取得 ---
+/* 座標取得 */
 function getPos(e) {
   var rect = canvas.getBoundingClientRect();
   return {
@@ -57,13 +58,20 @@ function getPos(e) {
   };
 }
 
-// --- ドラッグ開始 ---
+/* 当たり判定 */
+function hitTest(px, py) {
+  var dx = px - circle.x;
+  var dy = py - circle.y;
+  return dx*dx + dy*dy <= circle.r * circle.r;
+}
+
+/* ドラッグ開始 */
 canvas.onmousedown = function(e) {
   var pos = getPos(e);
   if (hitTest(pos.x, pos.y)) dragging = true;
 };
 
-// --- ドラッグ中 ---
+/* ドラッグ中 */
 canvas.onmousemove = function(e) {
   if (!dragging) return;
   var pos = getPos(e);
@@ -72,11 +80,10 @@ canvas.onmousemove = function(e) {
   draw();
 };
 
-// --- ドラッグ終了 ---
+/* ドラッグ終了 */
 canvas.onmouseup = function() { dragging = false; };
 canvas.onmouseleave = function() { dragging = false; };
 
-// --- 初期描画 ---
 draw();
 </script>
 
