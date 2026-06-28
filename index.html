@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>ドラッグ最小版（IE対応）</title>
+<title>ドラッグ最小版（IE対応1）</title>
 <style>
   body { margin: 0; overflow: hidden; }
   canvas { background: #f0f0f0; display: block; }
@@ -17,17 +17,17 @@
 var canvas = document.getElementById("stage");
 var ctx = canvas.getContext("2d");
 
-// --- ★ここが最重要：内部サイズを明示的に設定 ---
+// --- ★最重要：内部サイズを強制設定（これが無いと何も表示されない） ---
 function resizeCanvas() {
-  canvas.width  = document.body.clientWidth;   // 内部幅
-  canvas.height = document.body.clientHeight;  // 内部高さ
+  canvas.width  = document.documentElement.clientWidth;
+  canvas.height = document.documentElement.clientHeight;
   draw();
 }
 resizeCanvas();
 window.onresize = resizeCanvas;
 
 // --- ドラッグ対象の円 ---
-var circle = { x: 200, y: 200, r: 40 };
+var circle = { x: 150, y: 150, r: 40 };
 var dragging = false;
 
 // --- 描画 ---
