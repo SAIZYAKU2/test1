@@ -6,206 +6,215 @@
 <title>ダンス隊列移動シミュレーター</title>
 
 <style>
-  body {
-    font-family: "Meiryo UI", sans-serif;
-    margin: 0;
-    background: #f5f5f5;
-  }
+/* ================================
+   1. 基本スタイル
+   ================================ */
+body {
+  font-family: "Meiryo UI", sans-serif;
+  margin: 0;
+  background: #f5f5f5;
+}
 
-  header {
-    padding: 8px 12px;
-    background: #333;
-    color: #fff;
-    font-size: 14px;
-  }
+header {
+  padding: 8px 12px;
+  background: #333;
+  color: #fff;
+  font-size: 14px;
+}
 
-  #topPanel {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    padding: 8px 12px;
-    background: #fafafa;
-    border-bottom: 1px solid #ddd;
-    font-size: 13px;
-  }
+#topPanel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #fafafa;
+  border-bottom: 1px solid #ddd;
+  font-size: 13px;
+}
 
-  #topPanel label {
-    margin-right: 4px;
-  }
+#topPanel input[type="number"] {
+  width: 70px;
+  padding: 4px;
+}
 
-  #topPanel input[type="number"] {
-    width: 70px;
-    padding: 4px;
-    font-size: 13px;
-  }
+#topPanel button {
+  padding: 6px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
 
-  #topPanel button {
-    padding: 6px 12px;
-    font-size: 13px;
-    cursor: pointer;
-  }
+#mainLayout {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 90px);
+}
 
-  #mainLayout {
-    display: flex;
-    flex-direction: column;
-    height: calc(100vh - 90px);
-  }
+/* ================================
+   2. ステージ（4:3）
+   ================================ */
+#stageWrapper {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #e0e0e0;
+}
 
-  #stageWrapper {
-    flex: 1;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background: #e0e0e0;
-    position: relative;
-  }
+#stage {
+  background: #fff;
+  border: 1px solid #ccc;
+  touch-action: none;
+  aspect-ratio: 4 / 3;
+  width: 90%;
+  max-width: 900px;
+}
 
-  #stage {
-    background: #fff;
-    border: 1px solid #ccc;
-    touch-action: none;
-  }
+/* ================================
+   3. 曲バー
+   ================================ */
+#timeline {
+  height: 60px;
+  padding: 8px 12px;
+  background: #fdfdfd;
+  border-top: 1px solid #ddd;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
 
-  #timeline {
-    height: 60px;
-    padding: 8px 12px;
-    background: #fdfdfd;
-    border-top: 1px solid #ddd;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 13px;
-  }
+#timeline input[type="range"] {
+  flex: 1;
+}
 
-  #timeline input[type="range"] {
-    flex: 1;
-  }
+/* ================================
+   4. フォーメーション一覧
+   ================================ */
+#formationList {
+  height: 120px;
+  padding: 8px 12px;
+  background: #fafafa;
+  border-top: 1px solid #ddd;
+  overflow-x: auto;
+  white-space: nowrap;
+}
 
-  #formationList {
-    height: 120px;
-    padding: 8px 12px;
-    background: #fafafa;
-    border-top: 1px solid #ddd;
-    overflow-x: auto;
-    white-space: nowrap;
-    font-size: 13px;
-  }
+.formation-item {
+  display: inline-block;
+  padding: 6px 10px;
+  margin-right: 6px;
+  border-radius: 4px;
+  border: 1px solid #bbb;
+  background: #fff;
+  cursor: pointer;
+}
 
-  .formation-item {
-    display: inline-block;
-    padding: 6px 10px;
-    margin-right: 6px;
-    border-radius: 4px;
-    border: 1px solid #bbb;
-    background: #fff;
-    cursor: pointer;
-  }
-
-  .formation-item.active {
-    background: #3498db;
-    color: #fff;
-    border-color: #2980b9;
-  }
+.formation-item.active {
+  background: #3498db;
+  color: #fff;
+  border-color: #2980b9;
+}
 </style>
 </head>
 <body>
 
 <header>ダンス隊列移動シミュレーター</header>
 
+<!-- ================================
+     5. 上部パネル
+     ================================ -->
 <div id="topPanel">
   <div>
-    <label>人数：</label>
-    <input type="number" id="numPeople" value="20" min="1" max="200">
+    人数：<input type="number" id="numPeople" value="20" min="1" max="200">
   </div>
   <div>
-    <label>横(m)：</label>
-    <input type="number" id="wMeter" value="9" step="0.1">
+    横(m)：<input type="number" id="wMeter" value="12" step="0.1">
   </div>
   <div>
-    <label>縦(m)：</label>
-    <input type="number" id="hMeter" value="5.4" step="0.1">
+    縦(m)：<input type="number" id="hMeter" value="9" step="0.1">
   </div>
-  <div>
-    <button id="applyStageBtn">ステージ更新</button>
-    <button id="resetStageBtn">リセット</button>
-  </div>
-  <div>
-    <button id="togglePathBtn">動線 ON/OFF</button>
-    <button id="formationModeBtn">フォーメーション作成モード</button>
-  </div>
+
+  <button id="applyStageBtn">ステージ更新</button>
+  <button id="resetStageBtn">リセット</button>
+
+  <button id="addFormationBtn">フォーメーション追加</button>
 </div>
 
+<!-- ================================
+     6. メインレイアウト
+     ================================ -->
 <div id="mainLayout">
-  <!-- 中央：ステージ(Canvas) -->
+
+  <!-- 6-1. ステージ -->
   <div id="stageWrapper">
-    <canvas id="stage" width="360" height="500"></canvas>
+    <canvas id="stage"></canvas>
   </div>
 
-  <!-- 中下：曲の再生バー -->
+  <!-- 6-2. 曲バー -->
   <div id="timeline">
     <span>曲位置：</span>
     <input type="range" id="songSlider" min="0" max="180" value="0">
     <span id="songTimeLabel">0.0s</span>
-    <button id="playBtn">再生</button>
-    <button id="pauseBtn">一時停止</button>
   </div>
 
-  <!-- 下：フォーメーション一覧 -->
-  <div id="formationList">
-    <!-- ここにフォーメーションボタンを追加していく -->
-  </div>
+  <!-- 6-3. フォーメーション一覧 -->
+  <div id="formationList"></div>
 </div>
 
 <script>
-/* ==========================
-   ステージ・ダンサー基本設定
-   ========================== */
-
+/* ================================
+   7. Canvas 初期設定
+   ================================ */
 const canvas = document.getElementById("stage");
+canvas.width = 800;   // 4:3 の横長
+canvas.height = 600;
+
 const ctx = canvas.getContext("2d");
 
 const METER_TO_PX = 100;
 
-// ステージサイズ（m → px）
-let stageWidthM = 9;
-let stageHeightM = 5.4;
+/* ================================
+   8. ステージ設定
+   ================================ */
+let stageWidthM = 12;
+let stageHeightM = 9;
+
 let stageWidth = stageWidthM * METER_TO_PX;
 let stageHeight = stageHeightM * METER_TO_PX;
 
-// 人の半径（m）
-let personRadiusM = 0.5;
-let personRadiusPx = personRadiusM * METER_TO_PX;
-
-// ズーム・パン
 let scale = 1;
 let offsetX = 0;
 let offsetY = 0;
 
-// ダンサー配列
+/* ================================
+   9. ダンサー設定
+   ================================ */
+let personRadiusM = 0.5;
+let personRadiusPx = personRadiusM * METER_TO_PX;
+
 let dancers = [];
 
-// 動線表示フラグ
-let showPath = true;
-
-// フォーメーション管理
-let formations = []; // { id, name, timeSec, positions: [{id,x,y,color}], columns }
+/* ================================
+   10. フォーメーション管理
+   ================================ */
+let formations = [];
 let currentFormationId = null;
 
-/* ==========================
-   ステージフィット
-   ========================== */
+/* ================================
+   11. ステージフィット
+   ================================ */
 function fitStageToScreen() {
   const scaleX = canvas.width / stageWidth;
   const scaleY = canvas.height / stageHeight;
   scale = Math.min(scaleX, scaleY);
 
-  offsetX = (canvas.width  - stageWidth  * scale) / 2;
+  offsetX = (canvas.width - stageWidth * scale) / 2;
   offsetY = (canvas.height - stageHeight * scale) / 2;
 }
 
-/* ==========================
-   ダンサー生成（均等配置）
-   ========================== */
+/* ================================
+   12. ダンサー均等配置
+   ================================ */
 function generateDancers() {
   const N = parseInt(document.getElementById("numPeople").value);
   dancers = [];
@@ -224,29 +233,14 @@ function generateDancers() {
       id: i + 1,
       x: (col + 0.5) * cellW,
       y: (row + 0.5) * cellH,
-      color: "#3498db",
-      path: [] // 将来：移動履歴を入れる
+      color: "#3498db"
     });
   }
 }
 
-/* ==========================
-   文字サイズ調整
-   ========================== */
-function getBestFontSize(text, radiusPx) {
-  let size = radiusPx * 2;
-  ctx.font = size + "px Meiryo UI";
-
-  while (ctx.measureText(text).width > radiusPx * 1.6 && size > 6) {
-    size -= 1;
-    ctx.font = size + "px Meiryo UI";
-  }
-  return size;
-}
-
-/* ==========================
-   描画
-   ========================== */
+/* ================================
+   13. 描画
+   ================================ */
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -254,36 +248,20 @@ function draw() {
   ctx.translate(offsetX, offsetY);
   ctx.scale(scale, scale);
 
-  // ステージ背景
   ctx.fillStyle = "#f0f0f0";
   ctx.fillRect(0, 0, stageWidth, stageHeight);
 
-  // ステージ枠線
   ctx.strokeStyle = "#999";
   ctx.lineWidth = 2;
   ctx.strokeRect(0, 0, stageWidth, stageHeight);
 
-  // ダンサー
   dancers.forEach(d => {
-    // 動線表示（将来：pathに沿って線を描く）
-    if (showPath && d.path && d.path.length > 1) {
-      ctx.beginPath();
-      ctx.strokeStyle = "#95a5a6";
-      ctx.lineWidth = 1;
-      ctx.moveTo(d.path[0].x, d.path[0].y);
-      for (let i = 1; i < d.path.length; i++) {
-        ctx.lineTo(d.path[i].x, d.path[i].y);
-      }
-      ctx.stroke();
-    }
-
     ctx.beginPath();
     ctx.arc(d.x, d.y, personRadiusPx, 0, Math.PI * 2);
-    ctx.fillStyle = d.color || "#3498db";
+    ctx.fillStyle = d.color;
     ctx.fill();
 
-    const fontSize = getBestFontSize(d.id, personRadiusPx);
-    ctx.font = fontSize + "px Meiryo UI";
+    ctx.font = "20px Meiryo UI";
     ctx.fillStyle = "#fff";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
@@ -293,9 +271,9 @@ function draw() {
   ctx.restore();
 }
 
-/* ==========================
-   当たり判定（青丸）
-   ========================== */
+/* ================================
+   14. 当たり判定
+   ================================ */
 function hitTest(x, y) {
   const invX = (x - offsetX) / scale;
   const invY = (y - offsetY) / scale;
@@ -308,9 +286,9 @@ function hitTest(x, y) {
   return null;
 }
 
-/* ==========================
-   マウスドラッグ
-   ========================== */
+/* ================================
+   15. ドラッグ操作
+   ================================ */
 let dragging = null;
 
 canvas.addEventListener("mousedown", e => {
@@ -324,167 +302,42 @@ canvas.addEventListener("mousemove", e => {
   draw();
 });
 
-canvas.addEventListener("mouseup", () => {
-  dragging = null;
-});
+canvas.addEventListener("mouseup", () => dragging = null);
 
-canvas.addEventListener("mouseleave", () => {
-  dragging = null;
-});
+/* ================================
+   16. フォーメーション追加
+   ================================ */
+document.getElementById("addFormationBtn").addEventListener("click", () => {
+  const sec = parseFloat(document.getElementById("songSlider").value);
 
-/* ==========================
-   タッチ操作（ドラッグ＋ピンチズーム）
-   ========================== */
-let lastDist = 0;
-let lastCx = 0, lastCy = 0;
-
-canvas.addEventListener("touchstart", e => {
-  const rect = canvas.getBoundingClientRect();
-
-  if (e.touches.length === 1) {
-    const x = e.touches[0].clientX - rect.left;
-    const y = e.touches[0].clientY - rect.top;
-    dragging = hitTest(x, y);
-  }
-
-  if (e.touches.length === 2) {
-    lastDist = getDist(e);
-    const c = getCenter(e, rect);
-    lastCx = c.x;
-    lastCy = c.y;
-  }
-});
-
-canvas.addEventListener("touchmove", e => {
-  e.preventDefault();
-  const rect = canvas.getBoundingClientRect();
-
-  // 1本指ドラッグ
-  if (e.touches.length === 1 && dragging) {
-    const x = e.touches[0].clientX - rect.left;
-    const y = e.touches[0].clientY - rect.top;
-
-    dragging.x = (x - offsetX) / scale;
-    dragging.y = (y - offsetY) / scale;
-    draw();
-  }
-
-  // 2本指ピンチ（ズーム＋パン）
-  if (e.touches.length === 2) {
-    const newDist = getDist(e);
-    const c = getCenter(e, rect);
-
-    const worldX = (c.x - offsetX) / scale;
-    const worldY = (c.y - offsetY) / scale;
-
-    scale *= newDist / lastDist;
-    lastDist = newDist;
-
-    offsetX = c.x - worldX * scale;
-    offsetY = c.y - worldY * scale;
-
-    offsetX += (c.x - lastCx);
-    offsetY += (c.y - lastCy);
-
-    lastCx = c.x;
-    lastCy = c.y;
-
-    draw();
-  }
-});
-
-canvas.addEventListener("touchend", () => {
-  dragging = null;
-});
-
-function getDist(e) {
-  const dx = e.touches[0].clientX - e.touches[1].clientX;
-  const dy = e.touches[0].clientY - e.touches[1].clientY;
-  return Math.sqrt(dx * dx + dy * dy);
-}
-
-function getCenter(e, rect) {
-  const x = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
-  const y = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
-  return { x, y };
-}
-
-/* ==========================
-   ステージ更新・リセット
-   ========================== */
-document.getElementById("applyStageBtn").addEventListener("click", () => {
-  stageWidthM = parseFloat(document.getElementById("wMeter").value);
-  stageHeightM = parseFloat(document.getElementById("hMeter").value);
-
-  stageWidth = stageWidthM * METER_TO_PX;
-  stageHeight = stageHeightM * METER_TO_PX;
-  personRadiusPx = personRadiusM * METER_TO_PX;
-
-  generateDancers();
-  fitStageToScreen();
-  draw();
-});
-
-document.getElementById("resetStageBtn").addEventListener("click", () => {
-  generateDancers();
-  fitStageToScreen();
-  draw();
-});
-
-/* ==========================
-   動線 ON/OFF
-   ========================== */
-document.getElementById("togglePathBtn").addEventListener("click", () => {
-  showPath = !showPath;
-  draw();
-});
-
-/* ==========================
-   曲再生バー（ダミー）
-   ========================== */
-const songSlider = document.getElementById("songSlider");
-const songTimeLabel = document.getElementById("songTimeLabel");
-
-songSlider.addEventListener("input", () => {
-  const sec = parseFloat(songSlider.value);
-  songTimeLabel.textContent = sec.toFixed(1) + "s";
-  // 将来：secに応じてフォーメーションを補間して表示
-});
-
-document.getElementById("playBtn").addEventListener("click", () => {
-  // 将来：再生ロジック
-  alert("再生（まだダミー）");
-});
-
-document.getElementById("pauseBtn").addEventListener("click", () => {
-  // 将来：一時停止ロジック
-  alert("一時停止（まだダミー）");
-});
-
-/* ==========================
-   フォーメーション一覧（ダミー追加）
-   ========================== */
-const formationListDiv = document.getElementById("formationList");
-
-function addFormation(name, timeSec) {
   const id = Date.now();
+  const name = "F" + formations.length;
+
   formations.push({
     id,
     name,
-    timeSec,
+    timeSec: sec,
     positions: dancers.map(d => ({
       id: d.id,
       x: d.x,
       y: d.y,
       color: d.color
-    })),
-    columns: null
+    }))
   });
 
+  addFormationButton(id, name, sec);
+});
+
+/* ================================
+   17. フォーメーションボタン追加
+   ================================ */
+const formationListDiv = document.getElementById("formationList");
+
+function addFormationButton(id, name, sec) {
   const btn = document.createElement("button");
   btn.className = "formation-item";
-  btn.textContent = `${name} (${timeSec.toFixed(1)}s)`;
   btn.dataset.id = id;
+  btn.textContent = `${name} (${sec.toFixed(1)}s)`;
 
   btn.addEventListener("click", () => {
     selectFormation(id);
@@ -493,17 +346,18 @@ function addFormation(name, timeSec) {
   formationListDiv.appendChild(btn);
 }
 
+/* ================================
+   18. フォーメーション反映
+   ================================ */
 function selectFormation(id) {
   currentFormationId = id;
   const f = formations.find(f => f.id === id);
   if (!f) return;
 
-  // ボタンの見た目更新
   document.querySelectorAll(".formation-item").forEach(el => {
     el.classList.toggle("active", parseInt(el.dataset.id) === id);
   });
 
-  // ダンサー位置反映
   f.positions.forEach(p => {
     const d = dancers.find(d => d.id === p.id);
     if (d) {
@@ -513,25 +367,18 @@ function selectFormation(id) {
     }
   });
 
-  // 曲位置調整
-  songSlider.value = f.timeSec;
-  songTimeLabel.textContent = f.timeSec.toFixed(1) + "s";
+  document.getElementById("songSlider").value = f.timeSec;
+  document.getElementById("songTimeLabel").textContent = f.timeSec.toFixed(1) + "s";
 
   draw();
 }
 
-// 初期フォーメーションを1つ追加（0秒）
-function initDefaultFormation() {
-  addFormation("フォーメーション1", 0.0);
-}
-
-/* ==========================
-   初期化
-   ========================== */
+/* ================================
+   19. 初期化
+   ================================ */
 generateDancers();
 fitStageToScreen();
 draw();
-initDefaultFormation();
 </script>
 
 </body>
