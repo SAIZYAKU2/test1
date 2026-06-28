@@ -210,16 +210,20 @@ let formations = [];
 let currentFormationId = null;
 
 /* ================================
-   13. ステージフィット
+   13. ステージフィット（高さ優先）
    ================================ */
 function fitStageToScreen() {
-  const scaleX = canvas.width / stageWidth;
+
+  // ★ 高さ優先でフィットさせる
   const scaleY = canvas.height / stageHeight;
+  scale = scaleY;
 
-  scale = Math.min(scaleX, scaleY);
+  // ★ 上下はぴったり → offsetY = 0
+  offsetY = 0;
 
-  offsetX = (canvas.width - stageWidth * scale) / 2;
-  offsetY = (canvas.height - stageHeight * scale) / 2;
+  // ★ 横は中央に寄せる（余白が出てもOK）
+  const scaledStageWidth = stageWidth * scale;
+  offsetX = (canvas.width - scaledStageWidth) / 2;
 }
 
 /* ================================
