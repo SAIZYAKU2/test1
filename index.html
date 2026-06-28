@@ -176,14 +176,14 @@ function resizeCanvas() {
 }
 
 
-/* D-1: 画面座標取得（offsetX を使わない） */
+/* D-1: 画面座標取得（offsetX / offsetY をそのまま使う） */
 function getCanvasPos(e) {
-  const rect = canvas.getBoundingClientRect();
   return {
-    x: e.clientX - rect.left,
-    y: e.clientY - rect.top
+    x: e.offsetX,
+    y: e.offsetY
   };
 }
+
 
 /* D-2: 当たり判定 */
 let dragging = null;
