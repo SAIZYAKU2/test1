@@ -2,239 +2,65 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ダンス隊列ビューア（ドラッグ確定版）</title>
-
+<title>ドラッグ最小版</title>
 <style>
-  body { margin: 0; font-family: "Meiryo UI"; background: #f5f5f5; }
-
-  #top-controls {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 6px 10px; background: #fff; border-bottom: 1px solid #ccc;
-    font-size: 14px; flex-wrap: wrap; gap: 6px;
-  }
-  #top-controls input { width: 60px; padding: 4px; }
-  #top-controls button { padding: 4px 10px; }
-
-  #stage-container { background: #ddd; text-align: center; }
-  #stage {
-    width: 100%;
-    background: white; border: 1px solid #ccc; touch-action: none;
-    display: block;
-  }
-
-  #formation-list.horizontal {
-    display: flex; gap: 8px; padding: 8px;
-    overflow-x: auto; background: #fafafa; border-top: 1px solid #ccc;
-    height: 120px;
-  }
-  #formation-list.vertical {
-    display: grid !important;
-    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-    gap: 8px; padding: 8px; overflow-y: auto;
-    background: #fafafa; border-top: 1px solid #ccc; height: 200px;
-  }
-
-  .formation-thumb {
-    width: 80px; height: 60px; background: #eee;
-    border: 1px solid #ccc; border-radius: 4px;
-  }
-
-  /* F-1: 更新メモ表示領域 */
-  #update-log {
-    padding: 8px 10px;
-    font-size: 12px;
-    color: #555;
-    border-top: 1px solid #ccc;
-    background: #fff;
-  }
+  body { margin: 0; }
+  canvas { background: #f0f0f0; display: block; width: 100vw; height: 100vh; }
 </style>
 </head>
 <body>
 
-<div id="top-controls">
-  <div>
-    人数：<input type="number" id="numPeople" value="20">
-  </div>
-  <div>
-    <button id="applyBtn">更新</button>
-    <button id="resetBtn">リセット</button>
-    <button id="viewToggle">一覧切替</button>
-  </div>
-</div>
-
-<div id="stage-container">
-  <canvas id="stage"></canvas>
-</div>
-
-<div id="formation-list" class="horizontal">
-  <div class="formation-thumb"></div>
-  <div class="formation-thumb"></div>
-  <div class="formation-thumb"></div>
-</div>
-
-<!-- F-2: 更新メモ -->
-<div id="update-log"></div>
+<canvas id="stage"></canvas>
 
 <script>
-/* S-1: DOM 取得 */
-const numPeople     = document.getElementById("numPeople");
-const applyBtn      = document.getElementById("applyBtn");
-const resetBtn      = document.getElementById("resetBtn");
-const viewToggle    = document.getElementById("viewToggle");
-const formationList = document.getElementById("formation-list");
-const canvas        = document.getElementById("stage");
-const ctx           = canvas.getContext("2d");
-const updateLog     = document.getElementById("update-log");
+const canvas = document.getElementById("stage");
+const ctx = canvas.getContext("2d");
 
-/* S-2: 一覧切替 */
-viewToggle.addEventListener("click", () => {
-  formationList.classList.toggle("horizontal");
-  formationList.classList.toggle("vertical");
-  logUpdate("一覧切替ボタン押下：表示モード変更");
-});
-
-/* S-3: ステージ設定（キャンバスサイズ＝ステージサイズ） */
-let stageW  = 900;
-let stageH  = 540;
-
-/* S-4: ダンサー配列 */
-let dancers = [];
-const r = 25;
-
-/* S-5: ステージサイズをキャンバスに同期 */
-function resizeCanvas() {
-  const rect = canvas.getBoundingClientRect();
-  canvas.width  = rect.width;
-  canvas.height = rect.height;
-
-  stageW = canvas.width;
-  stageH = canvas.height;
-
-  generateDancers();
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
   draw();
 }
+window.addEventListener("resize", resize);
+resize();
 
-/* S-6: ダンサー生成（キャンバス座標で配置） */
-function generateDancers() {
-  const N = parseInt(numPeople.value, 10) || 0;
-  dancers = [];
+/* --- ドラッグ対象（青丸） --- */
+let circle = { x: 200, y: 200, r: 40 };
+let dragging = false;
 
-  if (N <= 0) return;
-
-  const cols = Math.ceil(Math.sqrt(N));
-  const rows = Math.ceil(N / cols);
-
-  const cellW = stageW / cols;
-  const cellH = stageH / rows;
-
-  for (let i = 0; i < N; i++) {
-    const col = i % cols;
-    const row = Math.floor(i / cols);
-    dancers.push({
-      id: i + 1,
-      x: (col + 0.5) * cellW,
-      y: (row + 0.5) * cellH
-    });
-  }
-}
-
-/* S-7: 描画（変換なし） */
+/* --- 描画 --- */
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // ステージ背景
-  ctx.fillStyle = "#f0f0f0";
-  ctx.fillRect(0, 0, stageW, stageH);
-
-  // 青丸
-  dancers.forEach(d => {
-    ctx.beginPath();
-    ctx.arc(d.x, d.y, r, 0, Math.PI * 2);
-    ctx.fillStyle = "#3498db";
-    ctx.fill();
-
-    ctx.fillStyle = "#fff";
-    ctx.font = "14px Meiryo UI";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(d.id, d.x, d.y);
-  });
+  ctx.beginPath();
+  ctx.arc(circle.x, circle.y, circle.r, 0, Math.PI * 2);
+  ctx.fillStyle = "#3498db";
+  ctx.fill();
 }
 
-/* D-1: 画面座標取得（offsetX / offsetY を使用） */
-function getCanvasPos(e) {
-  return {
-    x: e.offsetX,
-    y: e.offsetY
-  };
-}
-
-/* D-2: 当たり判定（キャンバス座標そのまま） */
-let dragging = null;
-
+/* --- 当たり判定 --- */
 function hitTest(px, py) {
-  for (let i = 0; i < dancers.length; i++) {
-    const d  = dancers[i];
-    const dx = px - d.x;
-    const dy = py - d.y;
-    if (dx * dx + dy * dy <= r * r) {
-      return d;
-    }
-  }
-  return null;
+  const dx = px - circle.x;
+  const dy = py - circle.y;
+  return dx*dx + dy*dy <= circle.r * circle.r;
 }
 
-/* D-3: ドラッグ開始 */
+/* --- マウスイベント --- */
 canvas.addEventListener("mousedown", e => {
-  const pos = getCanvasPos(e);
-  dragging  = hitTest(pos.x, pos.y);
+  if (hitTest(e.offsetX, e.offsetY)) {
+    dragging = true;
+  }
 });
 
-/* D-4: ドラッグ中 */
 canvas.addEventListener("mousemove", e => {
   if (!dragging) return;
-
-  const pos = getCanvasPos(e);
-  dragging.x = pos.x;
-  dragging.y = pos.y;
-
+  circle.x = e.offsetX;
+  circle.y = e.offsetY;
   draw();
 });
 
-/* D-5: ドラッグ終了 */
-canvas.addEventListener("mouseup", () => dragging = null);
-canvas.addEventListener("mouseleave", () => dragging = null);
-
-/* U-1: 更新メモ */
-function logUpdate(msg) {
-  const now = new Date().toLocaleTimeString();
-  updateLog.textContent = `[${now}] ${msg}`;
-}
-
-/* U-2: 更新・リセット */
-applyBtn.addEventListener("click", () => {
-  generateDancers();
-  draw();
-  logUpdate("更新ボタン押下：人数再配置");
-});
-
-resetBtn.addEventListener("click", () => {
-  generateDancers();
-  draw();
-  logUpdate("リセットボタン押下：初期配置に戻しました");
-});
-
-/* I-1: 初期化 */
-window.addEventListener("load", () => {
-  resizeCanvas();
-  logUpdate("初期化完了：青丸生成・ドラッグ有効版");
-});
-
-window.addEventListener("resize", () => {
-  resizeCanvas();
-  logUpdate("ウィンドウリサイズ：Canvas 再描画");
-});
+canvas.addEventListener("mouseup", () => dragging = false);
+canvas.addEventListener("mouseleave", () => dragging = false);
 </script>
 
 </body>
