@@ -2,15 +2,14 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>ドラッグ最小版（固定サイズ・IE対応）</title>
+<title>ドラッグ最小版（IE WebBrowser 完全対応）</title>
 <style>
-  body { margin: 0; background: #ddd; }
-  canvas { background: #f0f0f0; display: block; margin: 20px auto; }
+  body { margin: 0; overflow: hidden; background: #ccc; }
+  canvas { display: block; }
 </style>
 </head>
 <body>
 
-<!-- ★固定サイズの Canvas（内部サイズも固定） -->
 <canvas id="stage" width="800" height="600"></canvas>
 
 <script>
@@ -18,13 +17,19 @@
 var canvas = document.getElementById("stage");
 var ctx = canvas.getContext("2d");
 
+// --- ★Canvas 背景を JS で塗る（最重要） ---
+function fillBackground() {
+  ctx.fillStyle = "#f0f0f0";   // 不透明色
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
+
 // --- ドラッグ対象の円 ---
 var circle = { x: 200, y: 200, r: 40 };
 var dragging = false;
 
 // --- 描画 ---
 function draw() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  fillBackground();  // ← 背景を毎回塗る（IE対策）
 
   ctx.beginPath();
   ctx.arc(circle.x, circle.y, circle.r, 0, Math.PI * 2);
