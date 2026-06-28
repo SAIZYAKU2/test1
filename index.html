@@ -2,36 +2,30 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>ドラッグ最小版（IE WebBrowser 対策）</title>
+<title>ドラッグ最小版（環境非依存）</title>
 <style>
-  body { margin: 0; background: #ccc; }
-  #wrapper { position: relative; width: 800px; height: 600px; margin: 20px auto; }
+  body { margin: 0; }
   #stage {
-    position: absolute;
-    left: 0; top: 0;
-    width: 800px; height: 600px;
+    width: 800px;     /* 見た目の幅 */
+    height: 600px;    /* 見た目の高さ */
     background: #f0f0f0;
-  }
-  #overlay {
-    position: absolute;
-    left: 0; top: 0;
-    width: 800px; height: 600px;
-    background: rgba(0,0,0,0); /* 完全透明 */
-    cursor: pointer;
+    display: block;
+    margin: 20px auto;
   }
 </style>
 </head>
 <body>
 
-<div id="wrapper">
-  <canvas id="stage" width="800" height="600"></canvas>
-  <div id="overlay"></div> <!-- ★ここがイベントを受け取る -->
-</div>
+<canvas id="stage"></canvas>
 
 <script>
+// --- Canvas を取得 ---
 var canvas = document.getElementById("stage");
 var ctx = canvas.getContext("2d");
-var overlay = document.getElementById("overlay");
+
+// --- ★CSS のサイズを内部サイズにコピー（最重要） ---
+canvas.width  = canvas.clientWidth;
+canvas.height = canvas.clientHeight;
 
 // --- ドラッグ対象の円 ---
 var circle = { x: 200, y: 200, r: 40 };
@@ -56,35 +50,31 @@ function hitTest(px, py) {
 
 // --- マウス座標取得 ---
 function getPos(e) {
-  var rect = overlay.getBoundingClientRect();
+  var rect = canvas.getBoundingClientRect();
   return {
     x: e.clientX - rect.left,
     y: e.clientY - rect.top
   };
 }
 
-// --- ドラッグ開始（overlay が受け取る） ---
-overlay.onmousedown = function(e) {
+// --- ドラッグ開始 ---
+canvas.onmousedown = function(e) {
   var pos = getPos(e);
-  if (hitTest(pos.x, pos.y)) {
-    dragging = true;
-  }
+  if (hitTest(pos.x, pos.y)) dragging = true;
 };
 
 // --- ドラッグ中 ---
-overlay.onmousemove = function(e) {
+canvas.onmousemove = function(e) {
   if (!dragging) return;
-
   var pos = getPos(e);
   circle.x = pos.x;
   circle.y = pos.y;
-
   draw();
 };
 
 // --- ドラッグ終了 ---
-overlay.onmouseup = function() { dragging = false; };
-overlay.onmouseleave = function() { dragging = false; };
+canvas.onmouseup = function() { dragging = false; };
+canvas.onmouseleave = function() { dragging = false; };
 
 // --- 初期描画 ---
 draw();
