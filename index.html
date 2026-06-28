@@ -64,7 +64,7 @@ header {
   flex: 1;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start; /* ★上に詰める */
   background: #e0e0e0;
   overflow: hidden;
 }
@@ -74,11 +74,11 @@ header {
   border: 1px solid #ccc;
   touch-action: none;
 
-  /* ★ Canvas を CSS で縮小しない（ズレの原因になる） */
-  width: 800px;
-  height: 600px;
+  /* ★CanvasをCSSで縮小しない */
+  width: 600px;   /* ★白枠を小さくする */
+  height: 450px;  /* ★4:3維持 */
 }
-   
+
 /* ================================
    5. 曲バー
    ================================ */
