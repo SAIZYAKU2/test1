@@ -52,6 +52,7 @@ header {
 /* ================================
    2. ステージ（4:3）
    ================================ */
+/* 2. ステージ（4:3） */
 #stageWrapper {
   flex: 1;
   display: flex;
@@ -64,10 +65,8 @@ header {
   background: #fff;
   border: 1px solid #ccc;
   touch-action: none;
-  aspect-ratio: 4 / 3;
-  width: 90%;
-  max-width: 900px;
 }
+
 
 /* ================================
    3. 曲バー
@@ -274,7 +273,12 @@ function draw() {
 /* ================================
    14. 当たり判定
    ================================ */
-function hitTest(x, y) {
+// 14. 当たり判定
+function hitTestCanvas(clientX, clientY) {
+  const rect = canvas.getBoundingClientRect();
+  const x = clientX - rect.left;
+  const y = clientY - rect.top;
+
   const invX = (x - offsetX) / scale;
   const invY = (y - offsetY) / scale;
 
@@ -286,23 +290,73 @@ function hitTest(x, y) {
   return null;
 }
 
+
 /* ================================
-   15. ドラッグ操作
+   16. ドラッグ操作（タッチ）
    ================================ */
-let dragging = null;
 
-canvas.addEventListener("mousedown", e => {
-  dragging = hitTest(e.offsetX, e.offsetY);
+canvas.addEventListener("touchstart", e => {
+  const rect = canvas.getBoundingClientRect();
+
+  if (e.touches.length === 1) {
+    const cx = e.touches[0].clientX - rect.left;
+    const cy = e.touches[0].clientY - rect.top;
+
+    dragging = hitTestCanvas(e.touches[0].clientX, e.touches[0].clientY);
+  }
+
+  // ピンチズーム開始
+  if (e.touches.length === 2) {
+    lastDist = getDist(e);
+    const c = getCenter(e, rect);
+    lastCx = c.x;
+    lastCy = c.y;
+  }
 });
 
-canvas.addEventListener("mousemove", e => {
-  if (!dragging) return;
-  dragging.x = (e.offsetX - offsetX) / scale;
-  dragging.y = (e.offsetY - offsetY) / scale;
-  draw();
+canvas.addEventListener("touchmove", e => {
+  e.preventDefault();
+  const rect = canvas.getBoundingClientRect();
+
+  // 1本指ドラッグ
+  if (e.touches.length === 1 && dragging) {
+    const cx = e.touches[0].clientX - rect.left;
+    const cy = e.touches[0].clientY - rect.top;
+
+    dragging.x = (cx - offsetX) / scale;
+    dragging.y = (cy - offsetY) / scale;
+    draw();
+  }
+
+  // 2本指ピンチズーム
+  if (e.touches.length === 2) {
+    const newDist = getDist(e);
+    const c = getCenter(e, rect);
+
+    const worldX = (c.x - offsetX) / scale;
+    const worldY = (c.y - offsetY) / scale;
+
+    scale *= newDist / lastDist;
+    lastDist = newDist;
+
+    offsetX = c.x - worldX * scale;
+    offsetY = c.y - worldY * scale;
+
+    offsetX += (c.x - lastCx);
+    offsetY += (c.y - lastCy);
+
+    lastCx = c.x;
+    lastCy = c.y;
+
+    draw();
+  }
 });
 
-canvas.addEventListener("mouseup", () => dragging = null);
+canvas.addEventListener("touchend", () => {
+  dragging = null;
+});
+
+
 
 /* ================================
    16. フォーメーション追加
