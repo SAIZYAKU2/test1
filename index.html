@@ -58,15 +58,16 @@ header {
   justify-content: center;
   align-items: center;
   background: #e0e0e0;
+  overflow: hidden; /* ★はみ出し防止 */
 }
 
 #stage {
   background: #fff;
   border: 1px solid #ccc;
   touch-action: none;
-  /* ★ CSSでサイズを変えないことが重要 */
+  max-width: 100%; /* ★スマホで横幅制限 */
+  height: auto;    /* ★縦比率維持 */
 }
-
 
 
 /* ================================
@@ -91,13 +92,16 @@ header {
    4. フォーメーション一覧
    ================================ */
 #formationList {
-  height: 120px;
+  display: flex;
+  flex-wrap: wrap; /* ★折り返し表示 */
+  gap: 6px;
   padding: 8px 12px;
   background: #fafafa;
   border-top: 1px solid #ddd;
-  overflow-x: auto;
-  white-space: nowrap;
+  overflow-x: hidden; /* ★横スクロール禁止 */
+  justify-content: flex-start;
 }
+
 
 .formation-item {
   display: inline-block;
@@ -120,9 +124,14 @@ header {
 
 <header>ダンス隊列移動シミュレーター</header>
 
-<!-- ================================
-     5. 上部パネル
-     ================================ -->
+/* ================================
+   5. 上部パネル
+   ================================ */
+#topPanel {
+  position: relative;
+  z-index: 10; /* ★Canvasより前面に */
+}
+
 <div id="topPanel">
   <div>
     人数：<input type="number" id="numPeople" value="20" min="1" max="200">
@@ -434,6 +443,18 @@ function selectFormation(id) {
 generateDancers();
 fitStageToScreen();
 draw();
+   
+   /* ================================
+   20. 曲バー更新イベント
+   ================================ */
+const songSlider = document.getElementById("songSlider");
+const songTimeLabel = document.getElementById("songTimeLabel");
+
+songSlider.addEventListener("input", () => {
+  const sec = parseFloat(songSlider.value);
+  songTimeLabel.textContent = sec.toFixed(1) + "s";
+});
+
 </script>
 
 </body>
