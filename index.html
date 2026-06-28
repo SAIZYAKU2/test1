@@ -3,144 +3,70 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ダンス隊列ビューア（安定版）</title>
+<title>ダンス隊列ビューア</title>
 
 <style>
-  body { margin: 0; font-family: "Meiryo UI"; background: #f5f5f5; }
-
-  #top-controls {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 6px 10px; background: #fff; border-bottom: 1px solid #ccc;
-    font-size: 14px; flex-wrap: wrap; gap: 6px;
-  }
-  #top-controls input { width: 60px; padding: 4px; }
-  #top-controls button { padding: 4px 10px; }
-
-  #stage-container { background: #ddd; text-align: center; }
-#stage {
-    width: 100%;
-    background: white; border: 1px solid #ccc; touch-action: none;
-}
-
-
-  #formation-list.horizontal {
-    display: flex; gap: 8px; padding: 8px;
-    overflow-x: auto; background: #fafafa; border-top: 1px solid #ccc;
-    height: 120px;
-  }
-  #formation-list.vertical {
-    display: grid !important;
-    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-    gap: 8px; padding: 8px; overflow-y: auto;
-    background: #fafafa; border-top: 1px solid #ccc; height: 200px;
-  }
-
-  .formation-thumb {
-    width: 80px; height: 60px; background: #eee;
-    border: 1px solid #ccc; border-radius: 4px;
-  }
-
-  /* F-1: 更新メモ表示領域 */
-  #update-log {
-    padding: 8px 10px;
-    font-size: 12px;
-    color: #555;
-    border-top: 1px solid #ccc;
-    background: #fff;
-  }
+  body { font-family: "Meiryo UI", sans-serif; margin: 0; background: #f5f5f5; }
+  #stage { background: white; border: 1px solid #ccc; display: block; margin: auto; touch-action: none; }
+  #controls { text-align:center; margin:10px; }
+  input { width:80px; padding:5px; }
+  button { padding:8px 20px; margin-left:10px; }
 </style>
 </head>
 <body>
 
-<div id="top-controls">
-  <div>
-    人数：<input type="number" id="numPeople" value="20">
-  </div>
-  <div>
-    <button id="applyBtn">更新1</button>
-    <button id="resetBtn">リセット</button>
-    <button id="viewToggle">一覧切替</button>
-  </div>
+<h3 style="text-align:center;">ダンス隊列ビューア（ステージ入力＋フィット＋ピンチズーム）</h3>
+
+<div id="controls">
+  横(m)：<input type="number" id="wMeter" value="9" step="0.1">
+  縦(m)：<input type="number" id="hMeter" value="5.4" step="0.1">
+  <button id="applyBtn">ステージ更新</button>
+  <button id="resetBtn">リセット</button>
 </div>
 
-<div id="stage-container">
-  <canvas id="stage"></canvas>
-</div>
-
-<div id="formation-list" class="horizontal">
-  <div class="formation-thumb"></div>
-  <div class="formation-thumb"></div>
-  <div class="formation-thumb"></div>
-</div>
-
-<!-- F-2: 更新メモ -->
-<div id="update-log"></div>
+<canvas id="stage" width="360" height="500"></canvas>
 
 <script>
-/* S-1: DOM 取得 */
-const numPeople     = document.getElementById("numPeople");
-const applyBtn      = document.getElementById("applyBtn");
-const resetBtn      = document.getElementById("resetBtn");
-const viewToggle    = document.getElementById("viewToggle");
-const formationList = document.getElementById("formation-list");
-const canvas        = document.getElementById("stage");
-const ctx           = canvas.getContext("2d");
-const updateLog     = document.getElementById("update-log");
+const canvas = document.getElementById("stage");
+const ctx = canvas.getContext("2d");
 
-/* S-2: 一覧切替 */
-viewToggle.addEventListener("click", () => {
-  formationList.classList.toggle("horizontal");
-  formationList.classList.toggle("vertical");
-  logUpdate("一覧切替ボタン押下：表示モード変更");
-});
+// 1m = 100px（必要なら後で変更可能）
+const METER_TO_PX = 100;
 
-/* S-3: ステージ設定 */
-const METER = 100;
-let stageW  = 9 * METER;
-let stageH  = 5.4 * METER;
+// ステージサイズ（初期値：9m × 5.4m）
+let stageWidth = 9 * METER_TO_PX;
+let stageHeight = 5.4 * METER_TO_PX;
 
-let scale   = 1;
+// 人のサイズ（固定）
+let personRadius = 1 * METER_TO_PX;
+
+// 20人の初期位置
+const dancers = [];
+for (let i = 0; i < 20; i++) {
+  dancers.push({
+    id: i + 1,
+    x: 100 + (i % 5) * 80,
+    y: 100 + Math.floor(i / 5) * 80
+  });
+}
+
+// ズームとパン
+let scale = 1;
 let offsetX = 0;
 let offsetY = 0;
 
-/* S-4: ダンサー配列 */
-let dancers = [];
-const r = 0.5 * METER;
+// ステージを画面にフィットさせる
+function fitStageToScreen() {
+  const scaleX = canvas.width / stageWidth;
+  const scaleY = canvas.height / stageHeight;
 
-/* S-5: ステージを画面にフィット */
-function fitStage() {
-  const sx = canvas.width / stageW;
-  const sy = canvas.height / stageH;
-  scale    = Math.min(sx, sy);
-  offsetX  = (canvas.width - stageW * scale) / 2;
-  offsetY  = (canvas.height - stageH * scale) / 2;
+  scale = Math.min(scaleX, scaleY);
+
+  offsetX = (canvas.width  - stageWidth  * scale) / 2;
+  offsetY = (canvas.height - stageHeight * scale) / 2;
 }
 
-/* S-6: ダンサー生成 */
-function generateDancers() {
-  const N = parseInt(numPeople.value, 10) || 0;
-  dancers = [];
-
-  if (N <= 0) return;
-
-  const cols = Math.ceil(Math.sqrt(N * (stageW / stageH)));
-  const rows = Math.ceil(N / cols);
-
-  const cellW = stageW / cols;
-  const cellH = stageH / rows;
-
-  for (let i = 0; i < N; i++) {
-    const col = i % cols;
-    const row = Math.floor(i / cols);
-    dancers.push({
-      id: i + 1,
-      x: (col + 0.5) * cellW,
-      y: (row + 0.5) * cellH
-    });
-  }
-}
-
-/* S-7: 描画 */
+// 描画
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -150,119 +76,156 @@ function draw() {
 
   // ステージ背景
   ctx.fillStyle = "#f0f0f0";
-  ctx.fillRect(0, 0, stageW, stageH);
+  ctx.fillRect(0, 0, stageWidth, stageHeight);
 
-  // 青丸
+  // ステージ枠線
+  ctx.strokeStyle = "#999";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(0, 0, stageWidth, stageHeight);
+
+  // ダンサー
   dancers.forEach(d => {
     ctx.beginPath();
-    ctx.arc(d.x, d.y, r, 0, Math.PI * 2);
+    ctx.arc(d.x, d.y, personRadius, 0, Math.PI * 2);
     ctx.fillStyle = "#3498db";
     ctx.fill();
 
     ctx.fillStyle = "#fff";
-    ctx.font = `${r * 0.6}px Meiryo UI`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(d.id, d.x, d.y);
+    ctx.font = "12px Meiryo UI";
+    ctx.fillText(d.id, d.x - 5, d.y + 4);
   });
 
   ctx.restore();
 }
 
-/* S-8: Canvas サイズ同期 */
-function resizeCanvas() {
-  const rect = canvas.getBoundingClientRect();
+fitStageToScreen();
+draw();
 
-  // 内部サイズを 4:3 に固定
-  canvas.width  = rect.width;
-  canvas.height = rect.width * 0.75;
+// 当たり判定
+function hitTest(x, y) {
+  const invX = (x - offsetX) / scale;
+  const invY = (y - offsetY) / scale;
 
-  fitStage();
-  draw();
-}
-
-
-/* D-1: 画面座標取得（offsetX を使わない） */
-function getCanvasPos(e) {
-  const rect = canvas.getBoundingClientRect();
-  return {
-    x: e.clientX - rect.left,
-    y: e.clientY - rect.top
-  };
-}
-
-/* D-2: 当たり判定 */
-let dragging = null;
-
-function hitTest(px, py) {
-  const x = (px - offsetX) / scale;
-  const y = (py - offsetY) / scale;
-
-  for (let i = 0; i < dancers.length; i++) {
-    const d  = dancers[i];
-    const dx = x - d.x;
-    const dy = y - d.y;
-    if (dx * dx + dy * dy <= r * r) {
-      return d;
-    }
+  for (let d of dancers) {
+    const dx = invX - d.x;
+    const dy = invY - d.y;
+    if (dx * dx + dy * dy <= personRadius * personRadius) return d;
   }
   return null;
 }
 
-/* D-3: ドラッグ開始 */
+// PC：マウス操作
+let dragging = null;
+
 canvas.addEventListener("mousedown", e => {
-  const pos = getCanvasPos(e);
-  dragging  = hitTest(pos.x, pos.y);
+  dragging = hitTest(e.offsetX, e.offsetY);
 });
 
-/* D-4: ドラッグ中 */
 canvas.addEventListener("mousemove", e => {
   if (!dragging) return;
 
-  const pos = getCanvasPos(e);
-  dragging.x = (pos.x - offsetX) / scale;
-  dragging.y = (pos.y - offsetY) / scale;
-
+  dragging.x = (e.offsetX - offsetX) / scale;
+  dragging.y = (e.offsetY - offsetY) / scale;
   draw();
 });
 
-/* D-5: ドラッグ終了 */
 canvas.addEventListener("mouseup", () => dragging = null);
-canvas.addEventListener("mouseleave", () => dragging = null);
 
-/* U-1: 更新メモ */
-function logUpdate(msg) {
-  const now = new Date().toLocaleTimeString();
-  updateLog.textContent = `[${now}] ${msg}`;
+// スマホ：タッチ操作
+let lastDist = 0;
+let lastCx = 0, lastCy = 0;
+
+canvas.addEventListener("touchstart", e => {
+  const rect = canvas.getBoundingClientRect();
+
+  if (e.touches.length === 1) {
+    const x = e.touches[0].clientX - rect.left;
+    const y = e.touches[0].clientY - rect.top;
+    dragging = hitTest(x, y);
+  }
+
+  if (e.touches.length === 2) {
+    lastDist = getDist(e);
+    const c = getCenter(e, rect);
+    lastCx = c.x;
+    lastCy = c.y;
+  }
+});
+
+canvas.addEventListener("touchmove", e => {
+  e.preventDefault();
+  const rect = canvas.getBoundingClientRect();
+
+  // 1本指ドラッグ
+  if (e.touches.length === 1 && dragging) {
+    const x = e.touches[0].clientX - rect.left;
+    const y = e.touches[0].clientY - rect.top;
+
+    dragging.x = (x - offsetX) / scale;
+    dragging.y = (y - offsetY) / scale;
+    draw();
+  }
+
+  // 2本指ピンチ（ズーム＋パン）
+  if (e.touches.length === 2) {
+    const newDist = getDist(e);
+    const c = getCenter(e, rect);
+
+    // ズーム前の中心点の世界座標
+    const worldX = (c.x - offsetX) / scale;
+    const worldY = (c.y - offsetY) / scale;
+
+    // スケール変更
+    scale *= newDist / lastDist;
+    lastDist = newDist;
+
+    // ズーム後も同じ世界座標が中心に来るように補正
+    offsetX = c.x - worldX * scale;
+    offsetY = c.y - worldY * scale;
+
+    // 2本指の移動量でパン
+    offsetX += (c.x - lastCx);
+    offsetY += (c.y - lastCy);
+
+    lastCx = c.x;
+    lastCy = c.y;
+
+    draw();
+  }
+});
+
+canvas.addEventListener("touchend", () => dragging = null);
+
+// 2点間距離
+function getDist(e) {
+  const dx = e.touches[0].clientX - e.touches[1].clientX;
+  const dy = e.touches[0].clientY - e.touches[1].clientY;
+  return Math.sqrt(dx * dx + dy * dy);
 }
 
-/* U-2: 更新・リセット */
-applyBtn.addEventListener("click", () => {
-  generateDancers();
-  fitStage();
+// 2点の中心
+function getCenter(e, rect) {
+  const x = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
+  const y = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
+  return { x, y };
+}
+
+// ステージ更新ボタン
+document.getElementById("applyBtn").addEventListener("click", () => {
+  const w = parseFloat(document.getElementById("wMeter").value);
+  const h = parseFloat(document.getElementById("hMeter").value);
+
+  stageWidth = w * METER_TO_PX;
+  stageHeight = h * METER_TO_PX;
+
+  fitStageToScreen();
   draw();
-  logUpdate("更新ボタン押下：人数再配置");
 });
 
-resetBtn.addEventListener("click", () => {
-  generateDancers();
-  fitStage();
+// リセットボタン
+document.getElementById("resetBtn").addEventListener("click", () => {
+  fitStageToScreen();
   draw();
-  logUpdate("リセットボタン押下：初期配置に戻しました");
-});
-
-/* I-1: 初期化 */
-window.addEventListener("load", () => {
-  resizeCanvas();
-  generateDancers();
-  fitStage();
-  draw();
-  logUpdate("初期化完了：青丸生成・描画成功");
-});
-
-window.addEventListener("resize", () => {
-  resizeCanvas();
-  logUpdate("ウィンドウリサイズ：Canvas 再フィット");
 });
 </script>
 
