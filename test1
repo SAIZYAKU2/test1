@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>ダンスフォーメーション試作</title>
+  <script src="https://unpkg.com/konva@10/konva.min.js"></script>
+  <style>
+    #stage-container {
+      width: 800px;
+      height: 600px;
+      border: 1px solid #ccc;
+      margin: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h3>ダンスフォーメーション試作（Choreographic風）</h3>
+  <div id="stage-container"></div>
+
+  <script>
+    // ステージ（キャンバス）作成
+    const stage = new Konva.Stage({
+      container: 'stage-container',
+      width: 800,
+      height: 600,
+    });
+
+    const layer = new Konva.Layer();
+    stage.add(layer);
+
+    // グリッドを描画（任意）
+    const gridSize = 50;
+    for (let x = 0; x <= 800; x += gridSize) {
+      layer.add(new Konva.Line({
+        points: [x, 0, x, 600],
+        stroke: '#eee',
+        strokeWidth: 1,
+      }));
+    }
+    for (let y = 0; y <= 600; y += gridSize) {
+      layer.add(new Konva.Line({
+        points: [0, y, 800, y],
+        stroke: '#eee',
+        strokeWidth: 1,
+      }));
+    }
+
+    // ダンサー情報（後でJSON保存する対象）
+    const dancers = [
+      { id: 1, x: 200, y: 200, color: 'skyblue' },
+      { id: 2, x: 300, y: 200, color: 'pink' },
+      { id: 3, x: 400, y: 200, color: 'lightgreen' },
+    ];
+
+    dancers.forEach(d => {
+      // 円（ダンサー）
+      const circle = new Konva.Circle({
+        x: d.x,
+        y: d.y,
+        radius: 20,
+        fill: d.color,
+        stroke: 'black',
+        strokeWidth: 1,
+        draggable: true,
+      });
+
+      // ラベル（番号）
+      const text = new Konva.Text({
+        x: d.x - 6,
+        y: d.y - 8,
+        text: String(d.id),
+        fontSize: 16,
+        fill: 'black',
+      });
+
+      // ドラッグ時にラベルも追従
+      circle.on('dragmove', () => {
+        text.x(circle.x() - 6);
+        text.y(circle.y() - 8);
+      });
+
+      // ドラッグ終了時に内部データ更新（保存用）
+      circle.on('dragend', () => {
+        d.x = circle.x();
+        d.y = circle.y();
+        console.log('更新された位置:', d);
+        // ここで dancers 全体を JSON.stringify して保存すればOK
+      });
+
+      layer.add(circle);
+      layer.add(text);
+    });
+
+    layer.draw();
+  </script>
+</body>
+</html>
