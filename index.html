@@ -34,7 +34,7 @@ header {
   border-bottom: 1px solid #ddd;
   font-size: 13px;
   position: relative;
-  z-index: 10; /* Canvasより前面に */
+  z-index: 10;
 }
 
 #topPanel input[type="number"] {
@@ -54,7 +54,7 @@ header {
 #mainLayout {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 90px);
+  height: calc(100vh - 60px); /* ★余白を少し減らす */
 }
 
 /* ================================
@@ -66,14 +66,14 @@ header {
   justify-content: center;
   align-items: center;
   background: #e0e0e0;
-  overflow: hidden; /* はみ出し防止 */
+  overflow: hidden;
 }
 
 #stage {
   background: #fff;
   border: 1px solid #ccc;
   touch-action: none;
-  max-width: 100%; /* スマホで横幅制限 */
+  max-width: 100%;
   height: auto;
 }
 
@@ -81,8 +81,8 @@ header {
    5. 曲バー
    ================================ */
 #timeline {
-  height: 60px;
-  padding: 8px 12px;
+  height: 50px;
+  padding: 6px 12px;
   background: #fdfdfd;
   border-top: 1px solid #ddd;
   display: flex;
@@ -100,12 +100,12 @@ header {
    ================================ */
 #formationList {
   display: flex;
-  flex-wrap: wrap; /* 折り返し表示 */
+  flex-wrap: wrap;
   gap: 6px;
   padding: 8px 12px;
   background: #fafafa;
   border-top: 1px solid #ddd;
-  overflow-x: hidden; /* 横スクロール禁止 */
+  overflow-x: hidden;
   justify-content: flex-start;
 }
 
@@ -174,8 +174,8 @@ header {
    9. Canvas 初期設定
    ================================ */
 const canvas = document.getElementById("stage");
-canvas.width = 800;   // 4:3 の横長
-canvas.height = 600;  // 属性で指定
+canvas.width = 800;
+canvas.height = 600;
 const ctx = canvas.getContext("2d");
 
 const METER_TO_PX = 100;
@@ -404,7 +404,7 @@ function getCenter(e, rect) {
    19. フォーメーション追加
    ================================ */
 document.getElementById("addFormationBtn").addEventListener("click", () => {
-  const sec = parseFloat(document.getElementById("songSlider").value);
+  const sec = parseFloat(songSlider.value);
 
   const id = Date.now();
   const name = "F" + formations.length;
@@ -481,7 +481,41 @@ songSlider.addEventListener("input", () => {
 });
 
 /* ================================
-   23. 初期化
+   23. ステージ更新・リセット
+   ================================ */
+document.getElementById("applyStageBtn").addEventListener("click", () => {
+  stageWidthM = parseFloat(document.getElementById("wMeter").value);
+  stageHeightM = parseFloat(document.getElementById("hMeter").value);
+
+  stageWidth = stageWidthM * METER_TO_PX;
+  stageHeight = stageHeightM * METER_TO_PX;
+
+  personRadiusPx = personRadiusM * METER_TO_PX;
+
+  generateDancers();
+  fitStageToScreen();
+  draw();
+});
+
+document.getElementById("resetStageBtn").addEventListener("click", () => {
+  document.getElementById("numPeople").value = 20;
+  document.getElementById("wMeter").value = 12;
+  document.getElementById("hMeter").value = 9;
+
+  stageWidthM = 12;
+  stageHeightM = 9;
+  stageWidth = stageWidthM * METER_TO_PX;
+  stageHeight = stageHeightM * METER_TO_PX;
+
+  personRadiusPx = personRadiusM * METER_TO_PX;
+
+  generateDancers();
+  fitStageToScreen();
+  draw();
+});
+
+/* ================================
+   24. 初期化
    ================================ */
 generateDancers();
 fitStageToScreen();
