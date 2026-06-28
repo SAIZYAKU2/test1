@@ -2,32 +2,24 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>ドラッグ最小版（IE対応1）</title>
+<title>ドラッグ最小版（固定サイズ・IE対応）</title>
 <style>
-  body { margin: 0; overflow: hidden; }
-  canvas { background: #f0f0f0; display: block; }
+  body { margin: 0; background: #ddd; }
+  canvas { background: #f0f0f0; display: block; margin: 20px auto; }
 </style>
 </head>
 <body>
 
-<canvas id="stage"></canvas>
+<!-- ★固定サイズの Canvas（内部サイズも固定） -->
+<canvas id="stage" width="800" height="600"></canvas>
 
 <script>
 // --- IE互換のため var を使用 ---
 var canvas = document.getElementById("stage");
 var ctx = canvas.getContext("2d");
 
-// --- ★最重要：内部サイズを強制設定（これが無いと何も表示されない） ---
-function resizeCanvas() {
-  canvas.width  = document.documentElement.clientWidth;
-  canvas.height = document.documentElement.clientHeight;
-  draw();
-}
-resizeCanvas();
-window.onresize = resizeCanvas;
-
 // --- ドラッグ対象の円 ---
-var circle = { x: 150, y: 150, r: 40 };
+var circle = { x: 200, y: 200, r: 40 };
 var dragging = false;
 
 // --- 描画 ---
@@ -79,6 +71,8 @@ canvas.onmousemove = function(e) {
 canvas.onmouseup = function() { dragging = false; };
 canvas.onmouseleave = function() { dragging = false; };
 
+// --- 初期描画 ---
+draw();
 </script>
 
 </body>
