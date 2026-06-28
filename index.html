@@ -1,90 +1,355 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>aドラッグ最小版（最前面固定）</title>
-<style>
-  body { margin: 0; overflow: hidden; }
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ダンス隊列ビューア</title>
 
-  /* ★Canvas を画面いっぱい・最前面に固定 */
+<style>
+  body {
+    font-family: "Meiryo UI", sans-serif;
+    margin: 0;
+    background: #f5f5f5;
+  }
+
+  /* 上：設定エリア（薄型） */
+  #top-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 10px;
+    background: #fff;
+    border-bottom: 1px solid #ccc;
+    font-size: 14px;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  #top-controls input {
+    width: 60px;
+    padding: 4px;
+  }
+
+  #top-controls button {
+    padding: 4px 10px;
+  }
+
+  /* 中央：ステージ（4:3） */
+  #stage-container {
+    background: #ddd;
+    text-align: center;
+    padding: 0;
+  }
+
   #stage {
-    position: fixed;
-    left: 0;
-    top: 0;
-    width: 100vw;
-    height: 100vh;
-    background: #f0f0f0;
-    z-index: 9999; /* 最前面に固定 */
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    background: white;
+    border: 1px solid #ccc;
+    touch-action: none;
+  }
+
+  /* 中下：再生バー */
+  #timeline {
+    padding: 6px 10px;
+    background: #fff;
+    border-top: 1px solid #ccc;
+  }
+
+  #time-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+
+  #musicBar {
+    width: 100%;
+  }
+
+  /* 下：フォーメーション一覧（横スクロール） */
+  #formation-list.horizontal {
+    display: flex;
+    gap: 8px;
+    padding: 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    background: #fafafa;
+    border-top: 1px solid #ccc;
+    height: 120px;
+  }
+
+  /* 下：フォーメーション一覧（縦スクロール・グリッド） */
+  #formation-list.vertical {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 8px;
+    padding: 8px;
+    overflow-y: auto;
+    background: #fafafa;
+    border-top: 1px solid #ccc;
+    height: 200px;
+  }
+
+  /* サムネイル */
+  .formation-thumb {
+    width: 80px;
+    height: 60px;
+    background: #eee;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+
+  .formation-thumb.add {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 24px;
+    color: #666;
   }
 </style>
 </head>
 <body>
 
-<canvas id="stage"></canvas>
+<!-- 上：設定エリア -->
+<div id="top-controls">
+  <div>
+    人数：<input type="number" id="numPeople" value="20">
+    横(m)：<input type="number" id="wMeter" value="9">
+    縦(m)：<input type="number" id="hMeter" value="5.4">
+  </div>
+
+  <div>
+    <button id="applyBtn">更新</button>
+    <button id="resetBtn">リセット</button>
+    <button id="pathToggle">動線</button>
+    <button id="formationMode">作成</button>
+    <button id="viewToggle">一覧切替</button>
+  </div>
+</div>
+
+<!-- 中央：ステージ -->
+<div id="stage-container">
+  <canvas id="stage"></canvas>
+</div>
+
+<!-- 中下：再生バー -->
+<div id="timeline">
+  <div id="time-controls">
+    <button id="playBtn">▶︎</button>
+    <span id="currentTime">0:00</span> / <span id="totalTime">3:00</span>
+  </div>
+
+  <input type="range" id="musicBar" min="0" max="180" value="0" step="0.01">
+</div>
+
+<!-- 下：フォーメーション一覧（初期は横スクロール） -->
+<div id="formation-list" class="horizontal">
+  <div class="formation-thumb"></div>
+  <div class="formation-thumb"></div>
+  <div class="formation-thumb"></div>
+  <div class="formation-thumb add">＋</div>
+</div>
 
 <script>
-var canvas = document.getElementById("stage");
-var ctx = canvas.getContext("2d");
+/* ============================
+   一覧切替
+============================ */
+document.getElementById("viewToggle").addEventListener("click", () => {
+  const list = document.getElementById("formation-list");
 
-/* ★内部サイズを CSS と一致させる */
-function resize() {
-  canvas.width  = canvas.clientWidth;
-  canvas.height = canvas.clientHeight;
+  if (list.classList.contains("horizontal")) {
+    list.classList.remove("horizontal");
+    list.classList.add("vertical");
+  } else {
+    list.classList.remove("vertical");
+    list.classList.add("horizontal");
+  }
+});
+
+/* ============================
+   再生バーの時間表示
+============================ */
+function formatTime(sec) {
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60).toString().padStart(2, "0");
+  return `${m}:${s}`;
+}
+
+document.getElementById("musicBar").addEventListener("input", (e) => {
+  document.getElementById("currentTime").textContent = formatTime(e.target.value);
+});
+
+/* ============================
+   Canvas：ステージ描画
+============================ */
+const canvas = document.getElementById("stage");
+const ctx = canvas.getContext("2d");
+
+/* Canvas 内部サイズを CSS に同期（最重要） */
+function resizeCanvas() {
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width;
+  canvas.height = rect.height;
+
+  fitStageToScreen();
   draw();
 }
-resize();
-window.onresize = resize;
+resizeCanvas();
+window.addEventListener("resize", resizeCanvas);
 
-/* ドラッグ対象 */
-var circle = { x: 200, y: 200, r: 40 };
-var dragging = false;
+/* 1m = 100px */
+const METER_TO_PX = 100;
+
+/* ステージサイズ */
+let stageWidth = 9 * METER_TO_PX;
+let stageHeight = 5.4 * METER_TO_PX;
+
+/* 人の半径（m → px） */
+let personRadiusM = 0.5;
+let personRadiusPx = personRadiusM * METER_TO_PX;
+
+/* ダンサー配列 */
+let dancers = [];
+
+/* 均等配置 */
+function generateDancers() {
+  const N = parseInt(document.getElementById("numPeople").value);
+  dancers = [];
+
+  const cols = Math.ceil(Math.sqrt(N * (stageWidth / stageHeight)));
+  const rows = Math.ceil(N / cols);
+
+  const cellW = stageWidth / cols;
+  const cellH = stageHeight / rows;
+
+  for (let i = 0; i < N; i++) {
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+
+    dancers.push({
+      id: i + 1,
+      x: (col + 0.5) * cellW,
+      y: (row + 0.5) * cellH
+    });
+  }
+}
+
+/* ステージを画面にフィット */
+let scale = 1;
+let offsetX = 0;
+let offsetY = 0;
+
+function fitStageToScreen() {
+  const scaleX = canvas.width / stageWidth;
+  const scaleY = canvas.height / stageHeight;
+
+  scale = Math.min(scaleX, scaleY);
+
+  offsetX = (canvas.width - stageWidth * scale) / 2;
+  offsetY = (canvas.height - stageHeight * scale) / 2;
+}
+
+/* 文字最大化 */
+function getBestFontSize(text, radiusPx) {
+  let size = radiusPx * 2;
+  ctx.font = size + "px Meiryo UI";
+
+  while (ctx.measureText(text).width > radiusPx * 1.6) {
+    size -= 1;
+    ctx.font = size + "px Meiryo UI";
+  }
+  return size;
+}
 
 /* 描画 */
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  ctx.beginPath();
-  ctx.arc(circle.x, circle.y, circle.r, 0, Math.PI * 2);
-  ctx.fillStyle = "#3498db";
-  ctx.fill();
+  ctx.save();
+  ctx.translate(offsetX, offsetY);
+  ctx.scale(scale, scale);
+
+  ctx.fillStyle = "#f0f0f0";
+  ctx.fillRect(0, 0, stageWidth, stageHeight);
+
+  ctx.strokeStyle = "#999";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(0, 0, stageWidth, stageHeight);
+
+  dancers.forEach(d => {
+    ctx.beginPath();
+    ctx.arc(d.x, d.y, personRadiusPx, 0, Math.PI * 2);
+    ctx.fillStyle = "#3498db";
+    ctx.fill();
+
+    const fontSize = getBestFontSize(d.id, personRadiusPx);
+    ctx.font = fontSize + "px Meiryo UI";
+    ctx.fillStyle = "#fff";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(d.id, d.x, d.y);
+  });
+
+  ctx.restore();
 }
 
-/* 座標取得 */
-function getPos(e) {
-  var rect = canvas.getBoundingClientRect();
-  return {
-    x: e.clientX - rect.left,
-    y: e.clientY - rect.top
-  };
-}
+/* 初期化 */
+generateDancers();
+fitStageToScreen();
+draw();
 
 /* 当たり判定 */
-function hitTest(px, py) {
-  var dx = px - circle.x;
-  var dy = py - circle.y;
-  return dx*dx + dy*dy <= circle.r * circle.r;
+function hitTest(x, y) {
+  const invX = (x - offsetX) / scale;
+  const invY = (y - offsetY) / scale;
+
+  for (let d of dancers) {
+    const dx = invX - d.x;
+    const dy = invY - d.y;
+    if (dx * dx + dy * dy <= personRadiusPx * personRadiusPx) return d;
+  }
+  return null;
 }
 
-/* ドラッグ開始 */
-canvas.onmousedown = function(e) {
-  var pos = getPos(e);
-  if (hitTest(pos.x, pos.y)) dragging = true;
-};
+/* マウスドラッグ */
+let dragging = null;
 
-/* ドラッグ中 */
-canvas.onmousemove = function(e) {
+canvas.addEventListener("mousedown", e => {
+  dragging = hitTest(e.offsetX, e.offsetY);
+});
+
+canvas.addEventListener("mousemove", e => {
   if (!dragging) return;
-  var pos = getPos(e);
-  circle.x = pos.x;
-  circle.y = pos.y;
+
+  dragging.x = (e.offsetX - offsetX) / scale;
+  dragging.y = (e.offsetY - offsetY) / scale;
   draw();
-};
+});
 
-/* ドラッグ終了 */
-canvas.onmouseup = function() { dragging = false; };
-canvas.onmouseleave = function() { dragging = false; };
+canvas.addEventListener("mouseup", () => dragging = null);
 
-draw();
+/* ステージ更新 */
+document.getElementById("applyBtn").addEventListener("click", () => {
+  resizeCanvas();
+  stageWidth = parseFloat(wMeter.value) * METER_TO_PX;
+  stageHeight = parseFloat(hMeter.value) * METER_TO_PX;
+
+  personRadiusPx = personRadiusM * METER_TO_PX;
+
+  generateDancers();
+  fitStageToScreen();
+  draw();
+});
+
+/* リセット */
+document.getElementById("resetBtn").addEventListener("click", () => {
+  resizeCanvas();
+  generateDancers();
+  fitStageToScreen();
+  draw();
+});
 </script>
 
 </body>
