@@ -52,7 +52,6 @@ header {
 /* ================================
    2. ステージ（4:3）
    ================================ */
-/* 2. ステージ（4:3） */
 #stageWrapper {
   flex: 1;
   display: flex;
@@ -65,7 +64,9 @@ header {
   background: #fff;
   border: 1px solid #ccc;
   touch-action: none;
+  /* ★ CSSでサイズを変えないことが重要 */
 }
+
 
 
 /* ================================
@@ -165,10 +166,10 @@ header {
    7. Canvas 初期設定
    ================================ */
 const canvas = document.getElementById("stage");
-canvas.width = 800;   // 4:3 の横長
-canvas.height = 600;
-
+canvas.width = 800;   // ★ 4:3 の横長
+canvas.height = 600;  // ★ CSSではなく属性で指定
 const ctx = canvas.getContext("2d");
+
 
 const METER_TO_PX = 100;
 
