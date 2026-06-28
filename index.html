@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ダンス隊列ビューア（安定版）</title>
+<title>ダンス隊列ビューア（ドラッグ確定版）</title>
 
 <style>
   body { margin: 0; font-family: "Meiryo UI"; background: #f5f5f5; }
@@ -17,11 +17,11 @@
   #top-controls button { padding: 4px 10px; }
 
   #stage-container { background: #ddd; text-align: center; }
-#stage {
+  #stage {
     width: 100%;
     background: white; border: 1px solid #ccc; touch-action: none;
-}
-
+    display: block;
+  }
 
   #formation-list.horizontal {
     display: flex; gap: 8px; padding: 8px;
@@ -57,7 +57,7 @@
     人数：<input type="number" id="numPeople" value="20">
   </div>
   <div>
-    <button id="applyBtn">更新1</button>
+    <button id="applyBtn">更新</button>
     <button id="resetBtn">リセット</button>
     <button id="viewToggle">一覧切替</button>
   </div>
@@ -94,36 +94,35 @@ viewToggle.addEventListener("click", () => {
   logUpdate("一覧切替ボタン押下：表示モード変更");
 });
 
-/* S-3: ステージ設定 */
-const METER = 100;
-let stageW  = 9 * METER;
-let stageH  = 5.4 * METER;
-
-let scale   = 1;
-let offsetX = 0;
-let offsetY = 0;
+/* S-3: ステージ設定（キャンバスサイズ＝ステージサイズ） */
+let stageW  = 900;
+let stageH  = 540;
 
 /* S-4: ダンサー配列 */
 let dancers = [];
-const r = 0.5 * METER;
+const r = 25;
 
-/* S-5: ステージを画面にフィット */
-function fitStage() {
-  const sx = canvas.width / stageW;
-  const sy = canvas.height / stageH;
-  scale    = Math.min(sx, sy);
-  offsetX  = (canvas.width - stageW * scale) / 2;
-  offsetY  = (canvas.height - stageH * scale) / 2;
+/* S-5: ステージサイズをキャンバスに同期 */
+function resizeCanvas() {
+  const rect = canvas.getBoundingClientRect();
+  canvas.width  = rect.width;
+  canvas.height = rect.height;
+
+  stageW = canvas.width;
+  stageH = canvas.height;
+
+  generateDancers();
+  draw();
 }
 
-/* S-6: ダンサー生成 */
+/* S-6: ダンサー生成（キャンバス座標で配置） */
 function generateDancers() {
   const N = parseInt(numPeople.value, 10) || 0;
   dancers = [];
 
   if (N <= 0) return;
 
-  const cols = Math.ceil(Math.sqrt(N * (stageW / stageH)));
+  const cols = Math.ceil(Math.sqrt(N));
   const rows = Math.ceil(N / cols);
 
   const cellW = stageW / cols;
@@ -140,7 +139,7 @@ function generateDancers() {
   }
 }
 
-/* S-7: 描画 */
+/* S-7: 描画（変換なし） */
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -156,27 +155,14 @@ function draw() {
     ctx.fill();
 
     ctx.fillStyle = "#fff";
-    ctx.font = `${r * 0.6}px Meiryo UI`;
+    ctx.font = "14px Meiryo UI";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(d.id, d.x, d.y);
   });
 }
 
-/* S-8: Canvas サイズ同期 */
-function resizeCanvas() {
-  const rect = canvas.getBoundingClientRect();
-
-  // 内部サイズを 4:3 に固定
-  canvas.width  = rect.width;
-  canvas.height = rect.width * 0.75;
-
-  fitStage();
-  draw();
-}
-
-
-/* D-1: 画面座標取得（offsetX / offsetY をそのまま使う） */
+/* D-1: 画面座標取得（offsetX / offsetY を使用） */
 function getCanvasPos(e) {
   return {
     x: e.offsetX,
@@ -184,8 +170,7 @@ function getCanvasPos(e) {
   };
 }
 
-
-/* D-2: 当たり判定 */
+/* D-2: 当たり判定（キャンバス座標そのまま） */
 let dragging = null;
 
 function hitTest(px, py) {
@@ -230,14 +215,12 @@ function logUpdate(msg) {
 /* U-2: 更新・リセット */
 applyBtn.addEventListener("click", () => {
   generateDancers();
-  fitStage();
   draw();
   logUpdate("更新ボタン押下：人数再配置");
 });
 
 resetBtn.addEventListener("click", () => {
   generateDancers();
-  fitStage();
   draw();
   logUpdate("リセットボタン押下：初期配置に戻しました");
 });
@@ -245,15 +228,12 @@ resetBtn.addEventListener("click", () => {
 /* I-1: 初期化 */
 window.addEventListener("load", () => {
   resizeCanvas();
-  generateDancers();
-  fitStage();
-  draw();
-  logUpdate("初期化完了：青丸生成・描画成功");
+  logUpdate("初期化完了：青丸生成・ドラッグ有効版");
 });
 
 window.addEventListener("resize", () => {
   resizeCanvas();
-  logUpdate("ウィンドウリサイズ：Canvas 再フィット");
+  logUpdate("ウィンドウリサイズ：Canvas 再描画");
 });
 </script>
 
