@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html>
 <head>
 <meta charset="UTF-8">
-<title>ドラッグ最小版</title>
+<title>ドラッグ最小版（IE互換）</title>
 <style>
-  body { margin: 0; }
-  canvas { background: #f0f0f0; display: block; width: 100vw; height: 100vh; }
+  body { margin: 0; overflow: hidden; }
+  canvas { background: #f0f0f0; display: block; }
 </style>
 </head>
 <body>
@@ -13,22 +13,24 @@
 <canvas id="stage"></canvas>
 
 <script>
-const canvas = document.getElementById("stage");
-const ctx = canvas.getContext("2d");
+// --- IE互換のため var を使用 ---
+var canvas = document.getElementById("stage");
+var ctx = canvas.getContext("2d");
 
+// --- 画面サイズに合わせてキャンバスを設定 ---
 function resize() {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
+  canvas.width = document.body.clientWidth;
+  canvas.height = document.body.clientHeight;
   draw();
 }
-window.addEventListener("resize", resize);
 resize();
+window.onresize = resize;
 
-/* --- ドラッグ対象（青丸） --- */
-let circle = { x: 200, y: 200, r: 40 };
-let dragging = false;
+// --- ドラッグ対象の円 ---
+var circle = { x: 200, y: 200, r: 40 };
+var dragging = false;
 
-/* --- 描画 --- */
+// --- 描画 ---
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -38,29 +40,45 @@ function draw() {
   ctx.fill();
 }
 
-/* --- 当たり判定 --- */
+// --- 当たり判定 ---
 function hitTest(px, py) {
-  const dx = px - circle.x;
-  const dy = py - circle.y;
-  return dx*dx + dy*dy <= circle.r * circle.r;
+  var dx = px - circle.x;
+  var dy = py - circle.y;
+  return (dx*dx + dy*dy <= circle.r * circle.r);
 }
 
-/* --- マウスイベント --- */
-canvas.addEventListener("mousedown", e => {
-  if (hitTest(e.offsetX, e.offsetY)) {
+// --- マウス座標取得（IE互換） ---
+function getPos(e) {
+  var rect = canvas.getBoundingClientRect();
+  return {
+    x: e.clientX - rect.left,
+    y: e.clientY - rect.top
+  };
+}
+
+// --- ドラッグ開始 ---
+canvas.onmousedown = function(e) {
+  var pos = getPos(e);
+  if (hitTest(pos.x, pos.y)) {
     dragging = true;
   }
-});
+};
 
-canvas.addEventListener("mousemove", e => {
+// --- ドラッグ中 ---
+canvas.onmousemove = function(e) {
   if (!dragging) return;
-  circle.x = e.offsetX;
-  circle.y = e.offsetY;
-  draw();
-});
 
-canvas.addEventListener("mouseup", () => dragging = false);
-canvas.addEventListener("mouseleave", () => dragging = false);
+  var pos = getPos(e);
+  circle.x = pos.x;
+  circle.y = pos.y;
+
+  draw();
+};
+
+// --- ドラッグ終了 ---
+canvas.onmouseup = function() { dragging = false; };
+canvas.onmouseleave = function() { dragging = false; };
+
 </script>
 
 </body>
